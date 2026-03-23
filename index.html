@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Build on Bitcoin ($BOB) — Live Treasury Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.27.0/plotly.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #0a0a0f; color: #e0e6ed; }
+  .header { background: linear-gradient(135deg, #1a0e00 0%, #1c1208 50%, #1a1a24 100%); padding: 28px 40px; border-bottom: 2px solid #f7931a33; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+  .header h1 { font-size: 24px; font-weight: 600; color: #fff; letter-spacing: 0.5px; }
+  .header h1 .accent { color: #f7931a; }
+  .header .date { color: #8899aa; font-size: 14px; }
+  .header .price-tag { background: #f7931a22; border: 1px solid #f7931a44; padding: 6px 16px; border-radius: 8px; color: #f7931a; font-weight: 600; font-size: 15px; }
+  .header .live-dot { display: inline-block; width: 8px; height: 8px; background: #66bb6a; border-radius: 50%; margin-right: 6px; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; padding: 24px 40px; }
+  .kpi { background: linear-gradient(135deg, #111118 0%, #1a1812 100%); border: 1px solid #ffffff10; border-radius: 12px; padding: 20px; text-align: center; }
+  .kpi .label { font-size: 12px; color: #8899aa; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .kpi .value { font-size: 24px; font-weight: 700; color: #fff; }
+  .kpi .value.loading { font-size: 13px; color: #8899aa; font-weight: 400; }
+  .kpi .sub { font-size: 12px; color: #66bb6a; margin-top: 4px; }
+  .kpi .sub.neg { color: #ef5350; }
+  .kpi .sub.neutral { color: #8899aa; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 0 40px 24px; }
+  .card { background: #111118; border: 1px solid #ffffff10; border-radius: 12px; padding: 20px; }
+  .card h3 { font-size: 15px; color: #8899aa; margin-bottom: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+  .full-width { padding: 0 40px 24px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 10px 12px; color: #8899aa; font-weight: 500; border-bottom: 1px solid #ffffff15; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+  td { padding: 10px 12px; border-bottom: 1px solid #ffffff08; }
+  tr:hover td { background: #ffffff05; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+  .badge-green { background: #66bb6a22; color: #66bb6a; }
+  .badge-yellow { background: #ffa72622; color: #ffa726; }
+  .badge-red { background: #ef535022; color: #ef5350; }
+  .badge-blue { background: #1e90ff22; color: #1e90ff; }
+  .badge-gray { background: #ffffff15; color: #8899aa; }
+  .badge-orange { background: #f7931a22; color: #f7931a; }
+  .section-num { display: inline-block; background: #f7931a; color: #fff; width: 28px; height: 28px; border-radius: 50%; text-align: center; line-height: 28px; font-size: 14px; font-weight: 700; margin-right: 10px; }
+  .section-title { padding: 24px 40px 8px; font-size: 18px; font-weight: 600; color: #fff; }
+  .divider { height: 2px; background: linear-gradient(90deg, #f7931a33, transparent); margin: 12px 40px; }
+  .live-badge { display: inline-block; background: #10b98122; color: #10b981; padding: 2px 10px; border-radius: 12px; font-size: 10px; font-weight: 600; margin-left: 10px; letter-spacing: 0.5px; }
+  .refresh-btn { background: #f7931a22; border: 1px solid #f7931a44; color: #f7931a; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; transition: background 0.2s; }
+  .refresh-btn:hover { background: #f7931a33; }
+  .error-msg { color: #ef5350; font-size: 12px; text-align: center; padding: 20px; }
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #ffffff30; border-top-color: #f7931a; border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 900px) {
+    .grid { grid-template-columns: 1fr; }
+    .header { padding: 20px; }
+    .kpi-row { padding: 16px 20px; }
+    .grid, .full-width { padding-left: 20px; padding-right: 20px; }
+    .section-title { padding-left: 20px; }
+    .divider { margin-left: 20px; margin-right: 20px; }
+  }
+
+  @media print {
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    body { background: #fff !important; color: #1a1a2e !important; }
+    .header { background: #f0f4f8 !important; border-bottom: 2px solid #f7931a !important; }
+    .header h1 { color: #0d1b2a !important; }
+    .refresh-btn, .live-dot { display: none !important; }
+    .kpi { background: #f8f9fb !important; border: 1px solid #ddd !important; }
+    .kpi .value { color: #0d1b2a !important; }
+    .card { background: #fff !important; border: 1px solid #ddd !important; }
+    .card h3 { color: #333 !important; }
+    th { color: #333 !important; }
+    td { color: #1a1a2e !important; }
+    @page { size: A3 landscape; margin: 10mm; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ HEADER ═══════════════ -->
+<div class="header">
+  <div>
+    <h1><span class="accent">&#x20BF;</span> Build on Bitcoin <span class="accent">($BOB)</span> — Treasury Dashboard</h1>
+    <div class="date">
+      <span class="live-dot"></span>
+      <span id="last-refresh" style="font-size:11px; color:#66bb6a;">Loading live data...</span>
+    </div>
+  </div>
+  <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+    <div class="price-tag" id="header-bob-price">BOB <span class="spinner"></span></div>
+    <div class="price-tag" id="header-btc-price" style="background:#f7931a11; border-color:#f7931a22;">BTC <span class="spinner"></span></div>
+    <div class="price-tag" id="header-eth-price" style="background:#627eea22; border-color:#627eea44; color:#627eea;">ETH <span class="spinner"></span></div>
+    <button class="refresh-btn" onclick="refreshAll()">&#x21bb; Refresh All</button>
+  </div>
+</div>
+
+<!-- ═══════════════ SECTION 1: TOKEN KPIs ═══════════════ -->
+<div class="section-title"><span class="section-num">1</span>$BOB Token Overview <span class="live-badge">LIVE — CoinGecko</span></div>
+
+<div class="kpi-row" id="token-kpis">
+  <div class="kpi"><div class="label">BOB Price</div><div class="value loading" id="kpi-price"><span class="spinner"></span> Loading</div><div class="sub neutral" id="kpi-price-chg">—</div></div>
+  <div class="kpi"><div class="label">Market Cap</div><div class="value loading" id="kpi-mcap"><span class="spinner"></span> Loading</div><div class="sub neutral" id="kpi-mcap-rank">—</div></div>
+  <div class="kpi"><div class="label">24h Volume</div><div class="value loading" id="kpi-vol"><span class="spinner"></span> Loading</div><div class="sub neutral" id="kpi-vol-chg">—</div></div>
+  <div class="kpi"><div class="label">Fully Diluted Val.</div><div class="value loading" id="kpi-fdv"><span class="spinner"></span> Loading</div><div class="sub neutral" id="kpi-fdv-ratio">—</div></div>
+  <div class="kpi"><div class="label">Circulating Supply</div><div class="value loading" id="kpi-circ"><span class="spinner"></span> Loading</div><div class="sub neutral" id="kpi-circ-pct">—</div></div>
+  <div class="kpi"><div class="label">Total Supply</div><div class="value loading" id="kpi-total"><span class="spinner"></span> Loading</div><div class="sub neutral" id="kpi-max">—</div></div>
+  <div class="kpi"><div class="label">ATH</div><div class="value loading" id="kpi-ath"><span class="spinner"></span> Loading</div><div class="sub neutral" id="kpi-ath-chg">—</div></div>
+  <div class="kpi"><div class="label">ATL</div><div class="value loading" id="kpi-atl"><span class="spinner"></span> Loading</div><div class="sub neutral" id="kpi-atl-chg">—</div></div>
+</div>
+
+<!-- Price & Volume Charts -->
+<div class="grid">
+  <div class="card"><h3>BOB Price History (90d) <span class="live-badge">LIVE</span></h3><div id="chart-price" style="height:320px;"></div></div>
+  <div class="card"><h3>24h Trading Volume (90d) <span class="live-badge">LIVE</span></h3><div id="chart-volume" style="height:320px;"></div></div>
+</div>
+<div class="grid">
+  <div class="card"><h3>Market Cap vs FDV (90d) <span class="live-badge">LIVE</span></h3><div id="chart-mcap-fdv" style="height:320px;"></div></div>
+  <div class="card"><h3>BOB Price vs BTC Price (Correlation) <span class="live-badge">LIVE</span></h3><div id="chart-corr" style="height:320px;"></div></div>
+</div>
+
+<!-- ═══════════════ SECTION 2: BOB CHAIN TVL ═══════════════ -->
+<div class="divider"></div>
+<div class="section-title"><span class="section-num">2</span>BOB Chain — TVL & Protocol Breakdown <span class="live-badge">LIVE — DefiLlama</span></div>
+
+<div class="kpi-row" id="tvl-kpis">
+  <div class="kpi"><div class="label">BOB Chain TVL</div><div class="value loading" id="kpi-tvl"><span class="spinner"></span> Loading</div><div class="sub neutral" id="kpi-tvl-chg">—</div></div>
+  <div class="kpi"><div class="label">TVL 1d Change</div><div class="value loading" id="kpi-tvl-1d"><span class="spinner"></span></div><div class="sub neutral">24 hours</div></div>
+  <div class="kpi"><div class="label">TVL 7d Change</div><div class="value loading" id="kpi-tvl-7d"><span class="spinner"></span></div><div class="sub neutral">7 days</div></div>
+  <div class="kpi"><div class="label"># Protocols</div><div class="value loading" id="kpi-protocols"><span class="spinner"></span></div><div class="sub neutral">on BOB chain</div></div>
+</div>
+
+<div class="grid">
+  <div class="card"><h3>TVL by Protocol (Top 10) <span class="live-badge">LIVE</span></h3><div id="chart-tvl-protocol" style="height:380px;"></div></div>
+  <div class="card"><h3>BOB Chain TVL Trend <span class="live-badge">LIVE</span></h3><div id="chart-tvl-trend" style="height:380px;"></div></div>
+</div>
+
+<div class="full-width">
+<div class="card">
+<h3>Top Protocols on BOB Chain <span class="live-badge">LIVE</span></h3>
+<table>
+  <thead><tr><th>Protocol</th><th>Category</th><th>TVL (USD)</th><th>1d Change</th><th>7d Change</th></tr></thead>
+  <tbody id="protocols-table-body">
+    <tr><td colspan="5" style="text-align:center; color:#8899aa; padding:30px;"><span class="spinner"></span> Loading protocols from DefiLlama...</td></tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+<!-- ═══════════════ SECTION 3: DEX PAIRS ═══════════════ -->
+<div class="divider"></div>
+<div class="section-title"><span class="section-num">3</span>$BOB DEX Trading Pairs <span class="live-badge">LIVE — DexScreener</span></div>
+
+<div class="kpi-row" id="dex-kpis">
+  <div class="kpi"><div class="label">Total DEX Liquidity</div><div class="value loading" id="kpi-dex-liq"><span class="spinner"></span></div><div class="sub neutral">across all pairs</div></div>
+  <div class="kpi"><div class="label">24h DEX Volume</div><div class="value loading" id="kpi-dex-vol"><span class="spinner"></span></div><div class="sub neutral">across all pairs</div></div>
+  <div class="kpi"><div class="label"># Active Pairs</div><div class="value loading" id="kpi-dex-pairs"><span class="spinner"></span></div><div class="sub neutral">tracked by DexScreener</div></div>
+  <div class="kpi"><div class="label">24h Transactions</div><div class="value loading" id="kpi-dex-txns"><span class="spinner"></span></div><div class="sub neutral">buys + sells</div></div>
+</div>
+
+<div class="grid">
+  <div class="card"><h3>DEX Liquidity Distribution <span class="live-badge">LIVE</span></h3><div id="chart-dex-liq" style="height:340px;"></div></div>
+  <div class="card"><h3>DEX Volume Distribution (24h) <span class="live-badge">LIVE</span></h3><div id="chart-dex-vol" style="height:340px;"></div></div>
+</div>
+
+<div class="full-width">
+<div class="card">
+<h3>All DEX Pairs <span class="live-badge">LIVE</span></h3>
+<table>
+  <thead><tr><th>Pair</th><th>DEX</th><th>Chain</th><th>Price (USD)</th><th>24h Volume</th><th>Liquidity</th><th>5m</th><th>1h</th><th>24h</th><th>Buys/Sells (24h)</th></tr></thead>
+  <tbody id="dex-table-body">
+    <tr><td colspan="10" style="text-align:center; color:#8899aa; padding:30px;"><span class="spinner"></span> Loading pairs from DexScreener...</td></tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+<!-- ═══════════════ SECTION 4: STABLECOINS ON BOB ═══════════════ -->
+<div class="divider"></div>
+<div class="section-title"><span class="section-num">4</span>Stablecoins on BOB Chain <span class="live-badge">LIVE — DefiLlama</span></div>
+
+<div class="kpi-row" id="stable-kpis">
+  <div class="kpi"><div class="label">Total Stablecoins</div><div class="value loading" id="kpi-stables"><span class="spinner"></span></div><div class="sub neutral">on BOB chain</div></div>
+  <div class="kpi"><div class="label">Dominant Stablecoin</div><div class="value loading" id="kpi-dom-stable"><span class="spinner"></span></div><div class="sub neutral" id="kpi-dom-stable-pct">—</div></div>
+</div>
+
+<div class="grid">
+  <div class="card"><h3>Stablecoin Breakdown on BOB <span class="live-badge">LIVE</span></h3><div id="chart-stables" style="height:320px;"></div></div>
+  <div class="card"><h3>Stablecoin TVL Trend on BOB <span class="live-badge">LIVE</span></h3><div id="chart-stables-trend" style="height:320px;"></div></div>
+</div>
+
+<!-- ═══════════════ FOOTER ═══════════════ -->
+<div style="padding: 20px 40px; text-align: center; color: #555; font-size: 11px; border-top: 1px solid #ffffff08; margin-top: 20px;">
+  Data sources: <strong>CoinGecko</strong> (token data) · <strong>DefiLlama</strong> (TVL, protocols, stablecoins) · <strong>DexScreener</strong> (DEX pairs) &nbsp;|&nbsp;
+  Auto-refreshes every 5 minutes &nbsp;|&nbsp; Build on Bitcoin (BOB) &copy; 2026 &nbsp;|&nbsp;
+  <span id="footer-status" style="color:#66bb6a;">Initializing...</span>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     JAVASCRIPT: LIVE API INTEGRATIONS
+     ═══════════════════════════════════════════ -->
+<script>
+// ── CONFIG ──
+const COINGECKO_ID = 'bob';  // CoinGecko slug — will auto-detect
+const COINGECKO_IDS_TO_TRY = ['bob', 'bob-build-on-bitcoin', 'gobob', 'build-on-bitcoin'];
+const DEFILLAMA_CHAIN = 'BOB';
+const DEXSCREENER_QUERY = 'BOB';
+const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 min
+
+// ── CHART CONFIG ──
+const darkLayout = {
+  paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
+  font: { color: '#8899aa', family: 'Segoe UI, Arial', size: 12 },
+  margin: { t: 10, b: 40, l: 60, r: 20 },
+  xaxis: { gridcolor: '#ffffff10', linecolor: '#ffffff15' },
+  yaxis: { gridcolor: '#ffffff10', linecolor: '#ffffff15' },
+  showlegend: true, legend: { font: { size: 11 } }
+};
+const cfg = { displayModeBar: false, responsive: true };
+const pieM = { t: 10, b: 10, l: 10, r: 10 };
+
+// ── FORMATTERS ──
+const fUSD = n => {
+  if (n == null) return 'N/A';
+  if (n >= 1e9) return '$' + (n / 1e9).toFixed(2) + 'B';
+  if (n >= 1e6) return '$' + (n / 1e6).toFixed(2) + 'M';
+  if (n >= 1e3) return '$' + (n / 1e3).toFixed(1) + 'K';
+  if (n >= 1) return '$' + n.toFixed(2);
+  if (n >= 0.0001) return '$' + n.toFixed(6);
+  return '$' + n.toExponential(2);
+};
+const fNum = n => {
+  if (n == null) return 'N/A';
+  if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+  if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+  return n.toLocaleString();
+};
+const fPct = n => {
+  if (n == null) return '—';
+  const s = (n >= 0 ? '+' : '') + n.toFixed(2) + '%';
+  return s;
+};
+const pctClass = n => (n == null ? 'neutral' : n >= 0 ? '' : 'neg');
+const pctColor = n => (n == null ? '#8899aa' : n >= 0 ? '#66bb6a' : '#ef5350');
+
+let resolvedCoinGeckoId = null;
+let apiErrors = [];
+
+// ══════════════════════════════════════════
+// 1. CoinGecko — Token Data
+// ══════════════════════════════════════════
+async function detectCoinGeckoId() {
+  // Try search endpoint first
+  try {
+    const r = await fetch('https://api.coingecko.com/api/v3/search?query=build+on+bitcoin+bob');
+    const d = await r.json();
+    if (d.coins && d.coins.length > 0) {
+      // Look for the best match
+      const match = d.coins.find(c => c.symbol && c.symbol.toUpperCase() === 'BOB') || d.coins[0];
+      if (match) return match.id;
+    }
+  } catch(e) {}
+
+  // Fallback: try known IDs
+  for (const id of COINGECKO_IDS_TO_TRY) {
+    try {
+      const r = await fetch(`https://api.coingecko.com/api/v3/coins/${id}?localization=false&tickers=false&community_data=false&developer_data=false`);
+      if (r.ok) return id;
+    } catch(e) {}
+  }
+  return null;
+}
+
+async function fetchCoinGeckoData() {
+  try {
+    if (!resolvedCoinGeckoId) {
+      resolvedCoinGeckoId = await detectCoinGeckoId();
+    }
+    if (!resolvedCoinGeckoId) {
+      throw new Error('Could not find BOB on CoinGecko. Tried: ' + COINGECKO_IDS_TO_TRY.join(', '));
+    }
+
+    const id = resolvedCoinGeckoId;
+
+    // Fetch coin data + market chart in parallel
+    const [coinRes, chartRes, btcRes] = await Promise.all([
+      fetch(`https://api.coingecko.com/api/v3/coins/${id}?localization=false&tickers=false&community_data=false&developer_data=false`),
+      fetch(`https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=usd&days=90`),
+      fetch(`https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=90&interval=daily`)
+    ]);
+
+    const coin = await coinRes.json();
+    const chart = await chartRes.json();
+    const btcChart = await btcRes.json();
+
+    if (coin.error) throw new Error(coin.error);
+
+    const md = coin.market_data;
+
+    // Update header prices
+    document.getElementById('header-bob-price').innerHTML = `BOB ${fUSD(md.current_price?.usd)}`;
+    document.getElementById('header-btc-price').innerHTML = `BTC ${fUSD(md.current_price?.btc * (btcChart.prices?.slice(-1)[0]?.[1] || 87000))}`.replace(/.*BTC/, 'BTC ' + fUSD(btcChart.prices?.slice(-1)[0]?.[1]));
+
+    // Try to get ETH price
+    try {
+      const ethRes = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
+      const ethData = await ethRes.json();
+      document.getElementById('header-eth-price').innerHTML = `ETH ${fUSD(ethData.ethereum?.usd)}`;
+    } catch(e) {}
+
+    // KPIs
+    setText('kpi-price', fUSD(md.current_price?.usd));
+    setSubPct('kpi-price-chg', md.price_change_percentage_24h, '24h');
+
+    setText('kpi-mcap', fUSD(md.market_cap?.usd));
+    setText('kpi-mcap-rank', md.market_cap_rank ? `Rank #${md.market_cap_rank}` : '—', true);
+
+    setText('kpi-vol', fUSD(md.total_volume?.usd));
+    setSubPct('kpi-vol-chg', md.price_change_percentage_7d, '7d');
+
+    setText('kpi-fdv', fUSD(md.fully_diluted_valuation?.usd));
+    const fdvRatio = md.fully_diluted_valuation?.usd && md.market_cap?.usd ? (md.fully_diluted_valuation.usd / md.market_cap.usd).toFixed(2) + 'x' : '—';
+    setText('kpi-fdv-ratio', `FDV/MCap: ${fdvRatio}`, true);
+
+    setText('kpi-circ', fNum(md.circulating_supply));
+    const circPct = md.circulating_supply && md.total_supply ? ((md.circulating_supply / md.total_supply) * 100).toFixed(1) + '% of total' : '—';
+    setText('kpi-circ-pct', circPct, true);
+
+    setText('kpi-total', fNum(md.total_supply));
+    setText('kpi-max', md.max_supply ? `Max: ${fNum(md.max_supply)}` : 'No max supply', true);
+
+    setText('kpi-ath', fUSD(md.ath?.usd));
+    setSubPct('kpi-ath-chg', md.ath_change_percentage?.usd, 'from ATH');
+
+    setText('kpi-atl', fUSD(md.atl?.usd));
+    setSubPct('kpi-atl-chg', md.atl_change_percentage?.usd, 'from ATL');
+
+    // ── CHARTS ──
+    if (chart.prices && chart.prices.length > 0) {
+      const dates = chart.prices.map(p => new Date(p[0]));
+      const prices = chart.prices.map(p => p[1]);
+      const vols = chart.total_volumes ? chart.total_volumes.map(v => v[1]) : [];
+      const mcaps = chart.market_caps ? chart.market_caps.map(m => m[1]) : [];
+
+      // Price chart
+      Plotly.newPlot('chart-price', [{
+        x: dates, y: prices, type: 'scatter', mode: 'lines',
+        line: { color: '#f7931a', width: 2 },
+        fill: 'tozeroy', fillcolor: 'rgba(247,147,26,0.08)',
+        hovertemplate: '%{x|%b %d}<br>$%{y:.6f}<extra></extra>'
+      }], { ...darkLayout, height: 320, showlegend: false,
+        yaxis: { ...darkLayout.yaxis, tickprefix: '$' }
+      }, cfg);
+
+      // Volume chart
+      if (vols.length) {
+        Plotly.newPlot('chart-volume', [{
+          x: dates, y: vols, type: 'bar',
+          marker: { color: vols.map(v => v > (vols.reduce((a,b)=>a+b,0)/vols.length) ? '#f7931a' : '#f7931a66') },
+          hovertemplate: '%{x|%b %d}<br>$%{y:,.0f}<extra></extra>'
+        }], { ...darkLayout, height: 320, showlegend: false,
+          yaxis: { ...darkLayout.yaxis, tickprefix: '$', tickformat: ',.0s' }
+        }, cfg);
+      }
+
+      // MCap vs FDV
+      if (mcaps.length) {
+        const totalSupply = md.total_supply || 1;
+        const fdvs = prices.map(p => p * totalSupply);
+        Plotly.newPlot('chart-mcap-fdv', [{
+          x: dates, y: mcaps, type: 'scatter', mode: 'lines', name: 'Market Cap',
+          line: { color: '#3b82f6', width: 2 }
+        }, {
+          x: dates, y: fdvs, type: 'scatter', mode: 'lines', name: 'FDV',
+          line: { color: '#8b5cf6', width: 2, dash: 'dot' }
+        }], { ...darkLayout, height: 320,
+          yaxis: { ...darkLayout.yaxis, tickprefix: '$', tickformat: ',.0s' }
+        }, cfg);
+      }
+
+      // BOB vs BTC correlation
+      if (btcChart.prices && btcChart.prices.length > 0) {
+        const btcDates = btcChart.prices.map(p => new Date(p[0]));
+        const btcPrices = btcChart.prices.map(p => p[1]);
+        // Normalize both to % change from start
+        const bobStart = prices[0] || 1;
+        const btcStart = btcPrices[0] || 1;
+        const bobNorm = prices.map(p => ((p - bobStart) / bobStart) * 100);
+        // Sample BTC to match BOB dates roughly
+        const btcDaily = btcPrices;
+        const btcNorm = btcDaily.map(p => ((p - btcStart) / btcStart) * 100);
+
+        Plotly.newPlot('chart-corr', [{
+          x: dates, y: bobNorm, type: 'scatter', mode: 'lines', name: 'BOB (% chg)',
+          line: { color: '#f7931a', width: 2 }
+        }, {
+          x: btcDates, y: btcNorm, type: 'scatter', mode: 'lines', name: 'BTC (% chg)',
+          line: { color: '#f59e0b', width: 2, dash: 'dot' }
+        }], { ...darkLayout, height: 320,
+          yaxis: { ...darkLayout.yaxis, ticksuffix: '%', title: { text: '% Change', font: { size: 11 } } }
+        }, cfg);
+      }
+    }
+
+    return true;
+  } catch (e) {
+    apiErrors.push('CoinGecko: ' + e.message);
+    ['kpi-price','kpi-mcap','kpi-vol','kpi-fdv','kpi-circ','kpi-total','kpi-ath','kpi-atl'].forEach(id => {
+      setText(id, 'Error');
+    });
+    ['chart-price','chart-volume','chart-mcap-fdv','chart-corr'].forEach(id => {
+      document.getElementById(id).innerHTML = `<div class="error-msg">CoinGecko error: ${e.message}</div>`;
+    });
+    return false;
+  }
+}
+
+// ══════════════════════════════════════════
+// 2. DefiLlama — TVL & Protocols
+// ══════════════════════════════════════════
+async function fetchDefiLlamaData() {
+  try {
+    const [protocolsRes, chainTvlRes] = await Promise.all([
+      fetch('https://api.llama.fi/protocols'),
+      fetch(`https://api.llama.fi/v2/historicalChainTvl/${DEFILLAMA_CHAIN}`)
+    ]);
+
+    const allProtocols = await protocolsRes.json();
+    const chainTvlData = await chainTvlRes.json();
+
+    // Filter protocols on BOB chain
+    const bobProtocols = allProtocols
+      .filter(p => p.chains && p.chains.includes(DEFILLAMA_CHAIN) ||
+                   (p.chain && p.chain === DEFILLAMA_CHAIN))
+      .map(p => ({
+        name: p.name,
+        category: p.category || 'Other',
+        tvl: p.chainTvls?.[DEFILLAMA_CHAIN] || p.tvl || 0,
+        change_1d: p.change_1d,
+        change_7d: p.change_7d,
+        logo: p.logo
+      }))
+      .sort((a, b) => b.tvl - a.tvl);
+
+    // Chain TVL from chain-level data
+    let totalTvl = 0;
+    let tvl1d = null, tvl7d = null;
+
+    if (chainTvlData && chainTvlData.length > 0) {
+      const latest = chainTvlData[chainTvlData.length - 1];
+      totalTvl = latest.tvl;
+      if (chainTvlData.length >= 2) {
+        const prev1d = chainTvlData[chainTvlData.length - 2];
+        tvl1d = ((latest.tvl - prev1d.tvl) / prev1d.tvl) * 100;
+      }
+      if (chainTvlData.length >= 8) {
+        const prev7d = chainTvlData[chainTvlData.length - 8];
+        tvl7d = ((latest.tvl - prev7d.tvl) / prev7d.tvl) * 100;
+      }
+    }
+
+    // Fallback: sum from protocols if chain endpoint returned nothing
+    if (totalTvl === 0 && bobProtocols.length > 0) {
+      totalTvl = bobProtocols.reduce((s, p) => s + (p.tvl || 0), 0);
+    }
+
+    // KPIs
+    setText('kpi-tvl', fUSD(totalTvl));
+    if (tvl1d != null) setSubPct('kpi-tvl-chg', tvl1d, '24h');
+    setText('kpi-tvl-1d', tvl1d != null ? fPct(tvl1d) : 'N/A');
+    if (tvl1d != null) document.getElementById('kpi-tvl-1d').className = `value ${pctClass(tvl1d) === 'neg' ? '' : ''}`;
+    document.getElementById('kpi-tvl-1d').style.color = pctColor(tvl1d);
+    setText('kpi-tvl-7d', tvl7d != null ? fPct(tvl7d) : 'N/A');
+    document.getElementById('kpi-tvl-7d').style.color = pctColor(tvl7d);
+    setText('kpi-protocols', bobProtocols.length.toString());
+
+    // Protocol pie chart (top 10)
+    const top10 = bobProtocols.slice(0, 10);
+    const othersTV = bobProtocols.slice(10).reduce((s, p) => s + p.tvl, 0);
+    const pieLabels = top10.map(p => p.name);
+    const pieValues = top10.map(p => p.tvl);
+    if (othersTV > 0) { pieLabels.push('Others'); pieValues.push(othersTV); }
+    const pieColors = ['#f7931a','#3b82f6','#8b5cf6','#22c55e','#06b6d4','#ef4444','#f59e0b','#ec4899','#14b8a6','#6366f1','#6b7280'];
+
+    Plotly.newPlot('chart-tvl-protocol', [{
+      values: pieValues, labels: pieLabels, type: 'pie', hole: 0.45,
+      marker: { colors: pieColors },
+      textinfo: 'label+percent', textfont: { size: 10, color: '#fff' },
+      hovertemplate: '%{label}<br>$%{value:,.0f}<extra></extra>'
+    }], { ...darkLayout, margin: pieM, height: 380 }, cfg);
+
+    // TVL trend chart
+    if (chainTvlData && chainTvlData.length > 0) {
+      const tDates = chainTvlData.map(d => new Date(d.date * 1000));
+      const tVals = chainTvlData.map(d => d.tvl);
+      Plotly.newPlot('chart-tvl-trend', [{
+        x: tDates, y: tVals, type: 'scatter', mode: 'lines',
+        line: { color: '#22c55e', width: 2 },
+        fill: 'tozeroy', fillcolor: 'rgba(34,197,94,0.08)',
+        hovertemplate: '%{x|%b %d, %Y}<br>$%{y:,.0f}<extra></extra>'
+      }], { ...darkLayout, height: 380, showlegend: false,
+        yaxis: { ...darkLayout.yaxis, tickprefix: '$', tickformat: ',.0s' }
+      }, cfg);
+    }
+
+    // Protocols table
+    const tbody = document.getElementById('protocols-table-body');
+    if (bobProtocols.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#8899aa;">No protocols found on BOB chain via DefiLlama</td></tr>';
+    } else {
+      tbody.innerHTML = bobProtocols.slice(0, 25).map(p => `
+        <tr>
+          <td><strong>${p.name}</strong></td>
+          <td>${p.category}</td>
+          <td>${fUSD(p.tvl)}</td>
+          <td style="color:${pctColor(p.change_1d)}">${p.change_1d != null ? fPct(p.change_1d) : '—'}</td>
+          <td style="color:${pctColor(p.change_7d)}">${p.change_7d != null ? fPct(p.change_7d) : '—'}</td>
+        </tr>
+      `).join('');
+    }
+
+    return true;
+  } catch (e) {
+    apiErrors.push('DefiLlama: ' + e.message);
+    ['kpi-tvl','kpi-tvl-1d','kpi-tvl-7d','kpi-protocols'].forEach(id => setText(id, 'Error'));
+    document.getElementById('protocols-table-body').innerHTML = `<tr><td colspan="5" class="error-msg">DefiLlama error: ${e.message}</td></tr>`;
+    return false;
+  }
+}
+
+// ══════════════════════════════════════════
+// 3. DefiLlama — Stablecoins on BOB
+// ══════════════════════════════════════════
+async function fetchStablecoinsData() {
+  try {
+    const res = await fetch('https://stablecoins.llama.fi/stablecoins?includePrices=true');
+    const data = await res.json();
+
+    // Also get chain-specific stablecoin data
+    let chainStables = [];
+    try {
+      const chainRes = await fetch(`https://stablecoins.llama.fi/stablecoins?includePrices=true`);
+      const chainData = await chainRes.json();
+
+      if (chainData.peggedAssets) {
+        chainStables = chainData.peggedAssets
+          .filter(s => s.chainCirculating && s.chainCirculating[DEFILLAMA_CHAIN])
+          .map(s => ({
+            name: s.name,
+            symbol: s.symbol,
+            circulating: s.chainCirculating[DEFILLAMA_CHAIN]?.current?.peggedUSD || 0
+          }))
+          .filter(s => s.circulating > 0)
+          .sort((a, b) => b.circulating - a.circulating);
+      }
+    } catch(e) {}
+
+    const totalStables = chainStables.reduce((s, c) => s + c.circulating, 0);
+    setText('kpi-stables', fUSD(totalStables));
+
+    if (chainStables.length > 0) {
+      setText('kpi-dom-stable', chainStables[0].symbol);
+      const domPct = totalStables > 0 ? ((chainStables[0].circulating / totalStables) * 100).toFixed(1) + '%' : '—';
+      setText('kpi-dom-stable-pct', `${domPct} dominance`, true);
+    } else {
+      setText('kpi-dom-stable', 'N/A');
+    }
+
+    // Stablecoin pie
+    if (chainStables.length > 0) {
+      const stableColors = ['#2775ca', '#26a17b', '#f7931a', '#3b82f6', '#8b5cf6', '#6b7280'];
+      Plotly.newPlot('chart-stables', [{
+        values: chainStables.map(s => s.circulating),
+        labels: chainStables.map(s => `${s.symbol} — ${fUSD(s.circulating)}`),
+        type: 'pie', hole: 0.45,
+        marker: { colors: stableColors },
+        textinfo: 'label+percent', textfont: { size: 11, color: '#fff' }
+      }], { ...darkLayout, margin: pieM, height: 320 }, cfg);
+    } else {
+      document.getElementById('chart-stables').innerHTML = '<div class="error-msg">No stablecoin data found for BOB chain</div>';
+    }
+
+    // Stablecoin trend — use chain historical
+    try {
+      const trendRes = await fetch(`https://stablecoins.llama.fi/stablecoincharts/${DEFILLAMA_CHAIN}?stablecoin=`);
+      const trendData = await trendRes.json();
+      if (trendData && trendData.length > 0) {
+        const dates = trendData.map(d => new Date(d.date * 1000));
+        const vals = trendData.map(d => {
+          const total = Object.values(d.totalCirculating || {}).reduce((s, v) => s + (v?.peggedUSD || 0), 0);
+          return total;
+        });
+        Plotly.newPlot('chart-stables-trend', [{
+          x: dates, y: vals, type: 'scatter', mode: 'lines',
+          line: { color: '#2775ca', width: 2 },
+          fill: 'tozeroy', fillcolor: 'rgba(39,117,202,0.08)',
+          hovertemplate: '%{x|%b %d}<br>$%{y:,.0f}<extra></extra>'
+        }], { ...darkLayout, height: 320, showlegend: false,
+          yaxis: { ...darkLayout.yaxis, tickprefix: '$', tickformat: ',.0s' }
+        }, cfg);
+      }
+    } catch(e) {
+      document.getElementById('chart-stables-trend').innerHTML = '<div class="error-msg">Could not load stablecoin trend</div>';
+    }
+
+    return true;
+  } catch (e) {
+    apiErrors.push('Stablecoins: ' + e.message);
+    return false;
+  }
+}
+
+// ══════════════════════════════════════════
+// 4. DexScreener — DEX Pairs
+// ══════════════════════════════════════════
+async function fetchDexScreenerData() {
+  try {
+    const res = await fetch(`https://api.dexscreener.com/latest/dex/search?q=${DEXSCREENER_QUERY}`);
+    const data = await res.json();
+
+    // Filter to BOB-relevant pairs
+    let pairs = (data.pairs || []).filter(p => {
+      const base = (p.baseToken?.symbol || '').toUpperCase();
+      const quote = (p.quoteToken?.symbol || '').toUpperCase();
+      return base === 'BOB' || quote === 'BOB';
+    });
+
+    // Sort by volume
+    pairs.sort((a, b) => (b.volume?.h24 || 0) - (a.volume?.h24 || 0));
+
+    // KPIs
+    const totalLiq = pairs.reduce((s, p) => s + (p.liquidity?.usd || 0), 0);
+    const totalVol = pairs.reduce((s, p) => s + (p.volume?.h24 || 0), 0);
+    const totalTxns = pairs.reduce((s, p) => s + (p.txns?.h24?.buys || 0) + (p.txns?.h24?.sells || 0), 0);
+
+    setText('kpi-dex-liq', fUSD(totalLiq));
+    setText('kpi-dex-vol', fUSD(totalVol));
+    setText('kpi-dex-pairs', pairs.length.toString());
+    setText('kpi-dex-txns', fNum(totalTxns));
+
+    // Liquidity pie
+    const topPairs = pairs.slice(0, 8);
+    if (topPairs.length > 0) {
+      const dexColors = ['#f7931a','#3b82f6','#22c55e','#8b5cf6','#06b6d4','#ef4444','#f59e0b','#6b7280'];
+      Plotly.newPlot('chart-dex-liq', [{
+        values: topPairs.map(p => p.liquidity?.usd || 0),
+        labels: topPairs.map(p => `${p.baseToken?.symbol}/${p.quoteToken?.symbol} (${p.dexId})`),
+        type: 'pie', hole: 0.45,
+        marker: { colors: dexColors },
+        textinfo: 'label+percent', textfont: { size: 10, color: '#fff' }
+      }], { ...darkLayout, margin: pieM, height: 340 }, cfg);
+
+      // Volume bar
+      Plotly.newPlot('chart-dex-vol', [{
+        x: topPairs.map(p => `${p.baseToken?.symbol}/${p.quoteToken?.symbol}<br>${p.dexId}`),
+        y: topPairs.map(p => p.volume?.h24 || 0),
+        type: 'bar',
+        marker: { color: dexColors },
+        hovertemplate: '%{x}<br>$%{y:,.0f}<extra></extra>'
+      }], { ...darkLayout, height: 340, showlegend: false,
+        yaxis: { ...darkLayout.yaxis, tickprefix: '$', tickformat: ',.0s' },
+        margin: { t: 10, b: 80, l: 70, r: 20 }
+      }, cfg);
+    } else {
+      document.getElementById('chart-dex-liq').innerHTML = '<div class="error-msg">No DEX pairs found for BOB</div>';
+      document.getElementById('chart-dex-vol').innerHTML = '<div class="error-msg">No DEX pairs found for BOB</div>';
+    }
+
+    // Table
+    const tbody = document.getElementById('dex-table-body');
+    if (pairs.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:#8899aa;">No BOB pairs found on DexScreener</td></tr>';
+    } else {
+      tbody.innerHTML = pairs.slice(0, 20).map(p => {
+        const chg5m = p.priceChange?.m5;
+        const chg1h = p.priceChange?.h1;
+        const chg24h = p.priceChange?.h24;
+        const buys = p.txns?.h24?.buys || 0;
+        const sells = p.txns?.h24?.sells || 0;
+        return `<tr>
+          <td><strong>${p.baseToken?.symbol}/${p.quoteToken?.symbol}</strong></td>
+          <td>${p.dexId || '—'}</td>
+          <td>${p.chainId || '—'}</td>
+          <td>${fUSD(p.priceUsd ? parseFloat(p.priceUsd) : null)}</td>
+          <td>${fUSD(p.volume?.h24)}</td>
+          <td>${fUSD(p.liquidity?.usd)}</td>
+          <td style="color:${pctColor(chg5m)}">${chg5m != null ? fPct(chg5m) : '—'}</td>
+          <td style="color:${pctColor(chg1h)}">${chg1h != null ? fPct(chg1h) : '—'}</td>
+          <td style="color:${pctColor(chg24h)}">${chg24h != null ? fPct(chg24h) : '—'}</td>
+          <td>${buys} / ${sells}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    return true;
+  } catch (e) {
+    apiErrors.push('DexScreener: ' + e.message);
+    document.getElementById('dex-table-body').innerHTML = `<tr><td colspan="10" class="error-msg">DexScreener error: ${e.message}</td></tr>`;
+    return false;
+  }
+}
+
+// ══════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════
+function setText(id, text) {
+  const el = document.getElementById(id);
+  if (el) { el.textContent = text; el.classList.remove('loading'); }
+}
+
+function setSubPct(id, value, suffix) {
+  const el = document.getElementById(id);
+  if (el) {
+    if (value != null) {
+      el.textContent = fPct(value) + (suffix ? ` (${suffix})` : '');
+      el.className = 'sub ' + pctClass(value);
+    }
+  }
+}
+
+// ══════════════════════════════════════════
+// MAIN REFRESH
+// ══════════════════════════════════════════
+async function refreshAll() {
+  apiErrors = [];
+  const now = new Date();
+  document.getElementById('last-refresh').textContent = `Refreshing... ${now.toLocaleTimeString()}`;
+  document.getElementById('footer-status').textContent = 'Fetching data...';
+
+  const results = await Promise.allSettled([
+    fetchCoinGeckoData(),
+    fetchDefiLlamaData(),
+    fetchStablecoinsData(),
+    fetchDexScreenerData()
+  ]);
+
+  const successCount = results.filter(r => r.status === 'fulfilled' && r.value === true).length;
+  const timestamp = new Date().toLocaleTimeString();
+
+  document.getElementById('last-refresh').textContent = `Last refresh: ${timestamp} — ${successCount}/4 APIs OK`;
+  document.getElementById('last-refresh').style.color = successCount === 4 ? '#66bb6a' : (successCount >= 2 ? '#ffa726' : '#ef5350');
+
+  let statusMsg = `${successCount}/4 APIs loaded at ${timestamp}`;
+  if (apiErrors.length > 0) statusMsg += ' | Errors: ' + apiErrors.join('; ');
+  document.getElementById('footer-status').textContent = statusMsg;
+}
+
+// ── INIT ──
+refreshAll();
+setInterval(refreshAll, REFRESH_INTERVAL);
+</script>
+</body>
+</html>
