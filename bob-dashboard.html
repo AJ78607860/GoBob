@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Build on Bitcoin ($BOB) — Treasury Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.27.0/plotly.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #0a0a0f; color: #e0e6ed; }
+  .header { background: linear-gradient(135deg, #1a0e00 0%, #1c1208 50%, #1a1a24 100%); padding: 28px 40px; border-bottom: 2px solid #f7931a33; display: flex; justify-content: space-between; align-items: center; }
+  .header h1 { font-size: 24px; font-weight: 600; color: #fff; letter-spacing: 0.5px; }
+  .header h1 .accent { color: #f7931a; }
+  .header .date { color: #8899aa; font-size: 14px; }
+  .header .bob-price { background: #f7931a22; border: 1px solid #f7931a44; padding: 6px 16px; border-radius: 8px; color: #f7931a; font-weight: 600; font-size: 16px; }
+  .header .live-dot { display: inline-block; width: 8px; height: 8px; background: #66bb6a; border-radius: 50%; margin-right: 6px; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+  .kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; padding: 24px 40px; }
+  .kpi-row-6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; padding: 24px 40px; }
+  .kpi { background: linear-gradient(135deg, #111118 0%, #1a1812 100%); border: 1px solid #ffffff10; border-radius: 12px; padding: 20px; text-align: center; }
+  .kpi .label { font-size: 12px; color: #8899aa; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .kpi .value { font-size: 26px; font-weight: 700; color: #fff; }
+  .kpi .value.loading { font-size: 14px; color: #8899aa; }
+  .kpi .sub { font-size: 12px; color: #66bb6a; margin-top: 4px; }
+  .kpi .sub.neg { color: #ef5350; }
+  .kpi .sub.neutral { color: #8899aa; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 0 40px 24px; }
+  .card { background: #111118; border: 1px solid #ffffff10; border-radius: 12px; padding: 20px; }
+  .card h3 { font-size: 15px; color: #8899aa; margin-bottom: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+  .full-width { padding: 0 40px 24px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 10px 12px; color: #8899aa; font-weight: 500; border-bottom: 1px solid #ffffff15; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+  td { padding: 10px 12px; border-bottom: 1px solid #ffffff08; }
+  tr:hover td { background: #ffffff05; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+  .badge-green { background: #66bb6a22; color: #66bb6a; }
+  .badge-yellow { background: #ffa72622; color: #ffa726; }
+  .badge-red { background: #ef535022; color: #ef5350; }
+  .badge-blue { background: #1e90ff22; color: #1e90ff; }
+  .badge-gray { background: #ffffff15; color: #8899aa; }
+  .badge-orange { background: #f7931a22; color: #f7931a; }
+  .badge-purple { background: #8b5cf622; color: #8b5cf6; }
+  .section-num { display: inline-block; background: #f7931a; color: #fff; width: 28px; height: 28px; border-radius: 50%; text-align: center; line-height: 28px; font-size: 14px; font-weight: 700; margin-right: 10px; }
+  .section-title { padding: 24px 40px 8px; font-size: 18px; font-weight: 600; color: #fff; }
+  .divider { height: 2px; background: linear-gradient(90deg, #f7931a33, transparent); margin: 12px 40px; }
+  .live-badge { display: inline-block; background: #10b98122; color: #10b981; padding: 2px 10px; border-radius: 12px; font-size: 10px; font-weight: 600; margin-left: 10px; letter-spacing: 0.5px; }
+  .refresh-btn { background: #f7931a22; border: 1px solid #f7931a44; color: #f7931a; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; }
+  .refresh-btn:hover { background: #f7931a33; }
+
+  @media print {
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+    body { background: #fff !important; color: #1a1a2e !important; font-size: 11px !important; }
+    .header { background: #f0f4f8 !important; border-bottom: 2px solid #f7931a !important; padding: 16px 24px !important; }
+    .header h1 { color: #0d1b2a !important; font-size: 20px !important; }
+    .header .date { color: #555 !important; }
+    .header .bob-price { background: #fef3e2 !important; border: 1px solid #f7931a !important; color: #f7931a !important; }
+    .header .live-dot { display: none !important; }
+    .refresh-btn { display: none !important; }
+    .section-title { color: #0d1b2a !important; padding: 16px 24px 6px !important; font-size: 16px !important; }
+    .section-num { background: #f7931a !important; }
+    .divider { background: #f7931a !important; height: 1px !important; margin: 8px 24px !important; }
+    .kpi-row, .kpi-row-6 { padding: 12px 24px !important; gap: 10px !important; }
+    .kpi { background: #f8f9fb !important; border: 1px solid #ddd !important; border-radius: 8px !important; padding: 12px 8px !important; }
+    .kpi .label { color: #666 !important; font-size: 9px !important; }
+    .kpi .value { color: #0d1b2a !important; font-size: 18px !important; }
+    .kpi .sub { color: #2e7d32 !important; font-size: 10px !important; }
+    .kpi .sub.neg { color: #c62828 !important; }
+    .kpi .sub.neutral { color: #666 !important; }
+    .grid { padding: 0 24px 16px !important; gap: 14px !important; }
+    .card { background: #fff !important; border: 1px solid #ddd !important; border-radius: 8px !important; padding: 14px !important; }
+    .card h3 { color: #333 !important; font-size: 12px !important; }
+    .full-width { padding: 0 24px 16px !important; }
+    table { font-size: 10px !important; }
+    th { color: #333 !important; border-bottom: 2px solid #ccc !important; font-size: 9px !important; padding: 6px 8px !important; }
+    td { color: #1a1a2e !important; border-bottom: 1px solid #eee !important; padding: 6px 8px !important; }
+    .badge { border: 1px solid currentColor !important; }
+    .badge-green { background: #e8f5e9 !important; color: #2e7d32 !important; }
+    .badge-yellow { background: #fff8e1 !important; color: #e65100 !important; }
+    .badge-red { background: #fce4ec !important; color: #c62828 !important; }
+    .badge-blue { background: #e3f2fd !important; color: #1565c0 !important; }
+    .badge-gray { background: #f5f5f5 !important; color: #616161 !important; }
+    .badge-orange { background: #fff3e0 !important; color: #e65100 !important; }
+    .js-plotly-plot { break-inside: avoid !important; }
+    .card { break-inside: avoid !important; }
+    .full-width { break-inside: avoid !important; }
+    .kpi-row, .kpi-row-6 { break-inside: avoid !important; }
+    @page { size: A3 landscape; margin: 10mm; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div>
+    <h1><span class="accent">&#x20BF;</span> Build on Bitcoin <span class="accent">($BOB)</span> — Treasury Dashboard</h1>
+    <div class="date">Report Date: <span id="header-date">March 23, 2026</span> &nbsp;|&nbsp; <span class="live-dot"></span><span style="font-size:11px; color:#66bb6a;">Sample Data</span></div>
+  </div>
+  <div style="display:flex; align-items:center; gap:12px;">
+    <div class="bob-price">BOB <span id="bob-price">$0.00482</span></div>
+    <div class="bob-price" style="background:#f7931a11; border-color:#f7931a22;">BTC <span>$87,420</span></div>
+    <button class="refresh-btn" onclick="location.reload()">&#x21bb; Refresh</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SECTION 1: TREASURY SUMMARY & TOTALS
+     ═══════════════════════════════════════════ -->
+
+<div class="section-title"><span class="section-num">1</span>Treasury Summary & Totals</div>
+
+<div class="kpi-row-6">
+  <div class="kpi">
+    <div class="label">Total Treasury Value</div>
+    <div class="value">$28.74M</div>
+    <div class="sub">All assets incl. BTC</div>
+  </div>
+  <div class="kpi">
+    <div class="label">BTC Holdings</div>
+    <div class="value">$18.62M</div>
+    <div class="sub">213.0 BTC</div>
+  </div>
+  <div class="kpi">
+    <div class="label">ETH Holdings</div>
+    <div class="value">$3.18M</div>
+    <div class="sub">1,500.0 ETH</div>
+  </div>
+  <div class="kpi">
+    <div class="label">Stablecoin Holdings</div>
+    <div class="value">$5.42M</div>
+    <div class="sub">USDC + USDT</div>
+  </div>
+  <div class="kpi">
+    <div class="label">BOB Liquid</div>
+    <div class="value">$1.52M</div>
+    <div class="sub">315,352,697 BOB</div>
+  </div>
+  <div class="kpi">
+    <div class="label">Treasury Runway</div>
+    <div class="value">~22 mo</div>
+    <div class="sub">At current burn rate</div>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="card"><h3>Treasury Allocation by Asset (USD)</h3><div id="chart-alloc"></div></div>
+  <div class="card"><h3>Treasury by Custodian/Platform (USD)</h3><div id="chart-platform-pie"></div></div>
+</div>
+
+<div class="grid">
+  <div class="card"><h3>Treasury by Platform & Asset (USD Value)</h3><div id="chart-platform-bar"></div></div>
+  <div class="card"><h3>Weekly Treasury Balance Trend (USD)</h3><div id="chart-weekly"></div></div>
+</div>
+
+<div class="full-width">
+<div class="card">
+<h3>Treasury Holdings by Platform (All Assets)</h3>
+<table>
+  <thead><tr><th>Platform</th><th>Asset</th><th>Native Units</th><th>Value (USD)</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr style="background:#f7931a08;"><td><strong>Fireblocks</strong></td><td>BTC</td><td>125.00 BTC</td><td>$10,927,500</td><td><span class="badge badge-green">Liquid</span></td></tr>
+    <tr><td>Fireblocks</td><td>ETH</td><td>850.00 ETH</td><td>$1,802,500</td><td><span class="badge badge-green">Liquid</span></td></tr>
+    <tr><td>Fireblocks</td><td>USDC</td><td>2,150,000 USDC</td><td>$2,150,000</td><td><span class="badge badge-green">Liquid</span></td></tr>
+    <tr><td>Fireblocks</td><td>USDT</td><td>820,000 USDT</td><td>$820,000</td><td><span class="badge badge-green">Liquid</span></td></tr>
+    <tr style="background:#f7931a08;"><td><strong>Copper</strong></td><td>BTC</td><td>58.00 BTC</td><td>$5,070,360</td><td><span class="badge badge-green">Liquid</span></td></tr>
+    <tr><td>Copper</td><td>ETH</td><td>400.00 ETH</td><td>$848,000</td><td><span class="badge badge-green">Liquid</span></td></tr>
+    <tr><td>Copper</td><td>USDC</td><td>1,450,000 USDC</td><td>$1,450,000</td><td><span class="badge badge-green">Liquid</span></td></tr>
+    <tr style="background:#f7931a08;"><td><strong>Anchorage</strong></td><td>BTC</td><td>30.00 BTC</td><td>$2,622,600</td><td><span class="badge badge-blue">Cold Storage</span></td></tr>
+    <tr><td>Anchorage</td><td>ETH</td><td>250.00 ETH</td><td>$530,000</td><td><span class="badge badge-green">Liquid</span></td></tr>
+    <tr><td>MultiSig</td><td>USDC</td><td>1,000,000 USDC</td><td>$1,000,000</td><td><span class="badge badge-green">Liquid</span></td></tr>
+    <!-- BOB Token Holdings -->
+    <tr style="border-top: 2px solid #f7931a33;"><td>Fireblocks</td><td>Foundation (BOB)</td><td>185,000,000 BOB</td><td>$891,700</td><td><span class="badge badge-green">Liquid</span></td></tr>
+    <tr><td>Fireblocks</td><td>Ecosystem Fund (BOB)</td><td>130,352,697 BOB</td><td>$628,100</td><td><span class="badge badge-green">Liquid</span></td></tr>
+    <tr><td>Vesting Contract</td><td>Locked (BOB)</td><td>2,400,000,000 BOB</td><td>$11,568,000</td><td><span class="badge badge-blue">Locked</span></td></tr>
+    <tr><td>On-chain</td><td>LP Incentives (BOB)</td><td>450,000,000 BOB</td><td>$2,169,000</td><td><span class="badge badge-orange">Committed</span></td></tr>
+    <!-- Totals -->
+    <tr style="font-weight:700; border-top: 2px solid #f7931a33; background:#111118;"><td colspan="2">Total Liquid (excl. BOB)</td><td></td><td>$27,220,960</td><td></td></tr>
+    <tr style="font-weight:700; background:#111118;"><td colspan="2">Total Liquid BOB</td><td>315,352,697 BOB</td><td>$1,519,800</td><td></td></tr>
+    <tr style="font-weight:700; background:#0d0d14; font-size:14px; border-top: 2px solid #f7931a66;"><td colspan="2">Total Liquid</td><td></td><td>$28,740,760</td><td></td></tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SECTION 2: TOKENOMICS & TOKEN INFO
+     ═══════════════════════════════════════════ -->
+
+<div class="divider"></div>
+<div class="section-title"><span class="section-num">2</span>Tokenomics & Token Info</div>
+
+<div class="kpi-row-6">
+  <div class="kpi">
+    <div class="label">Total Supply</div>
+    <div class="value">10B</div>
+    <div class="sub neutral">BOB Tokens</div>
+  </div>
+  <div class="kpi">
+    <div class="label">Circulating Supply</div>
+    <div class="value">3.24B</div>
+    <div class="sub">32.4% of total</div>
+  </div>
+  <div class="kpi">
+    <div class="label">BOB Price</div>
+    <div class="value">$0.00482</div>
+    <div class="sub">+6.4% (7d)</div>
+  </div>
+  <div class="kpi">
+    <div class="label">Market Cap</div>
+    <div class="value">$15.62M</div>
+    <div class="sub neutral">Rank #412</div>
+  </div>
+  <div class="kpi">
+    <div class="label">FDV</div>
+    <div class="value">$48.20M</div>
+    <div class="sub neutral">FDV/MCap: 3.09x</div>
+  </div>
+  <div class="kpi">
+    <div class="label">TVL (BOB Chain)</div>
+    <div class="value">$142.8M</div>
+    <div class="sub">+12.3% (30d)</div>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="card"><h3>BOB Token Allocation (10B Total Supply)</h3><div id="chart-token"></div></div>
+  <div class="card"><h3>Token Release Schedule (Cumulative Circulating Supply)</h3><div id="chart-release"></div></div>
+</div>
+
+<div class="full-width">
+<div class="card">
+<h3>Token Vesting Schedule</h3>
+<table>
+  <thead><tr><th>Basket</th><th>Total Allocation (BOB)</th><th>% of Supply</th><th>TGE Unlock (BOB)</th><th>Cliff</th><th>Vesting</th><th>Monthly Release (BOB)</th></tr></thead>
+  <tbody>
+    <tr><td>Team & Core Contributors</td><td>1,500,000,000 BOB</td><td>15.0%</td><td>0</td><td>12 months</td><td>36 months linear</td><td>41,666,667 BOB</td></tr>
+    <tr><td>Early Backers / Investors</td><td>1,200,000,000 BOB</td><td>12.0%</td><td>0</td><td>6 months</td><td>24 months linear</td><td>50,000,000 BOB</td></tr>
+    <tr><td>Ecosystem & Grants</td><td>2,500,000,000 BOB</td><td>25.0%</td><td>250,000,000 BOB</td><td>None</td><td>48 months linear</td><td>46,875,000 BOB</td></tr>
+    <tr><td>Community & Airdrops</td><td>2,000,000,000 BOB</td><td>20.0%</td><td>400,000,000 BOB</td><td>None</td><td>36 months linear</td><td>44,444,444 BOB</td></tr>
+    <tr><td>Foundation Reserve</td><td>1,800,000,000 BOB</td><td>18.0%</td><td>100,000,000 BOB</td><td>None</td><td>48 months linear</td><td>35,416,667 BOB</td></tr>
+    <tr><td>Liquidity / Market Making</td><td>1,000,000,000 BOB</td><td>10.0%</td><td>500,000,000 BOB</td><td>None</td><td>12 months linear</td><td>41,666,667 BOB</td></tr>
+    <tr style="font-weight:700; border-top: 2px solid #f7931a33;"><td>Total</td><td>10,000,000,000 BOB</td><td>100%</td><td>1,250,000,000 BOB</td><td colspan="3"></td></tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+<!-- Foundation & Ecosystem Disclosure -->
+<div class="section-title" style="padding-top:8px; font-size:16px;">Foundation & Ecosystem Token Disclosure</div>
+
+<div class="grid">
+  <div class="card"><h3>Foundation Reserve Breakdown</h3><div id="chart-foundation"></div></div>
+  <div class="card"><h3>Ecosystem Fund Breakdown</h3><div id="chart-ecosystem"></div></div>
+</div>
+
+<div class="full-width">
+<div class="card">
+<h3>Foundation Reserve — 1,800,000,000 BOB (18.0% of Total Supply)</h3>
+<table>
+  <thead><tr><th>Category</th><th>BOB Tokens</th><th>% of Allocation</th><th>Value (USD)</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr><td>Initial Allocation</td><td>1,800,000,000 BOB</td><td>100.0%</td><td>$8,676,000</td><td><span class="badge badge-gray">Total</span></td></tr>
+    <tr><td>Unlocked at TGE</td><td>100,000,000 BOB</td><td>5.6%</td><td>$482,000</td><td><span class="badge badge-green">Unlocked</span></td></tr>
+    <tr><td>Unlocked on Schedule (To Date)</td><td>318,750,000 BOB</td><td>17.7%</td><td>$1,536,375</td><td><span class="badge badge-green">Unlocked</span></td></tr>
+    <tr style="background:#f7931a08;"><td><strong>Total Unlocked (To Date)</strong></td><td><strong>418,750,000 BOB</strong></td><td><strong>23.3%</strong></td><td><strong>$2,018,375</strong></td><td><span class="badge badge-green">Unlocked</span></td></tr>
+    <tr style="background:#1e90ff08;"><td><strong>Remaining (Locked)</strong></td><td><strong>1,381,250,000 BOB</strong></td><td><strong>76.7%</strong></td><td><strong>$6,657,625</strong></td><td><span class="badge badge-blue">Locked</span></td></tr>
+  </tbody>
+</table>
+<h3 style="margin-top:20px;">Foundation Liquidity Detail</h3>
+<table>
+  <thead><tr><th>Location</th><th>BOB Tokens</th><th>Value (USD)</th><th>Liquidity</th></tr></thead>
+  <tbody>
+    <tr><td>Fireblocks Wallets (liquid)</td><td>185,000,000 BOB</td><td>$891,700</td><td><span class="badge badge-green">Liquid</span></td></tr>
+    <tr><td>Staked in BOB Validators</td><td>120,000,000 BOB</td><td>$578,400</td><td><span class="badge badge-gray">Staked</span></td></tr>
+    <tr style="background:#f7931a08;"><td><strong>Total Foundation Active Balance</strong></td><td><strong>305,000,000 BOB</strong></td><td><strong>$1,470,100</strong></td><td></td></tr>
+    <tr style="background:#ef535010;"><td><strong>Foundation Tokens Deployed (To Date)</strong></td><td><strong>113,750,000 BOB</strong></td><td><strong>$548,275</strong></td><td><span class="badge badge-red">Deployed</span></td></tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SECTION 3: BOB CHAIN METRICS & BRIDGE TVL
+     ═══════════════════════════════════════════ -->
+
+<div class="divider"></div>
+<div class="section-title"><span class="section-num">3</span>BOB Chain Metrics & Bridge TVL</div>
+
+<div class="kpi-row-6">
+  <div class="kpi">
+    <div class="label">BOB Chain TVL</div>
+    <div class="value">$142.8M</div>
+    <div class="sub">+12.3% (30d)</div>
+  </div>
+  <div class="kpi">
+    <div class="label">BTC Bridged</div>
+    <div class="value">1,284 BTC</div>
+    <div class="sub">$112.3M value</div>
+  </div>
+  <div class="kpi">
+    <div class="label">Total Transactions</div>
+    <div class="value">8.42M</div>
+    <div class="sub neutral">BOB L2 Network</div>
+  </div>
+  <div class="kpi">
+    <div class="label">Unique Wallets</div>
+    <div class="value">312K</div>
+    <div class="sub">+18.7% (30d)</div>
+  </div>
+  <div class="kpi">
+    <div class="label">Avg Gas Fee</div>
+    <div class="value">$0.004</div>
+    <div class="sub neutral">L2 transactions</div>
+  </div>
+  <div class="kpi">
+    <div class="label">dApps Deployed</div>
+    <div class="value">87</div>
+    <div class="sub">+9 this month</div>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="card"><h3>TVL by Protocol on BOB Chain</h3><div id="chart-tvl-protocol"></div></div>
+  <div class="card"><h3>TVL Trend — BOB Chain (12M)</h3><div id="chart-tvl-trend"></div></div>
+</div>
+
+<div class="grid">
+  <div class="card"><h3>Bridge Inflows — BTC Bridged Over Time</h3><div id="chart-bridge"></div></div>
+  <div class="card"><h3>Daily Active Addresses (30d)</h3><div id="chart-daa"></div></div>
+</div>
+
+<div class="full-width">
+<div class="card">
+<h3>Top Protocols on BOB Chain</h3>
+<table>
+  <thead><tr><th>Protocol</th><th>Category</th><th>TVL (USD)</th><th>Share of TVL</th><th>BTC Locked</th><th>30d Change</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Segment Finance</strong></td><td>Lending</td><td>$42,150,000</td><td>29.5%</td><td>312 BTC</td><td><span style="color:#66bb6a;">+18.2%</span></td><td><span class="badge badge-green">Active</span></td></tr>
+    <tr><td><strong>Oku Trade (Uniswap V3)</strong></td><td>DEX</td><td>$28,400,000</td><td>19.9%</td><td>198 BTC</td><td><span style="color:#66bb6a;">+9.4%</span></td><td><span class="badge badge-green">Active</span></td></tr>
+    <tr><td><strong>LayerBank</strong></td><td>Lending</td><td>$21,800,000</td><td>15.3%</td><td>156 BTC</td><td><span style="color:#66bb6a;">+22.1%</span></td><td><span class="badge badge-green">Active</span></td></tr>
+    <tr><td><strong>Shoebill Finance</strong></td><td>Lending</td><td>$14,200,000</td><td>9.9%</td><td>105 BTC</td><td><span style="color:#66bb6a;">+5.8%</span></td><td><span class="badge badge-green">Active</span></td></tr>
+    <tr><td><strong>Avalon Finance</strong></td><td>Yield</td><td>$11,900,000</td><td>8.3%</td><td>88 BTC</td><td><span style="color:#66bb6a;">+14.3%</span></td><td><span class="badge badge-green">Active</span></td></tr>
+    <tr><td><strong>SolvBTC</strong></td><td>Liquid Staking</td><td>$9,450,000</td><td>6.6%</td><td>108 BTC</td><td><span style="color:#66bb6a;">+31.2%</span></td><td><span class="badge badge-green">Active</span></td></tr>
+    <tr><td><strong>Pell Network</strong></td><td>Restaking</td><td>$8,100,000</td><td>5.7%</td><td>92 BTC</td><td><span style="color:#ef5350;">-2.1%</span></td><td><span class="badge badge-green">Active</span></td></tr>
+    <tr><td><strong>Others (27 protocols)</strong></td><td>Various</td><td>$6,800,000</td><td>4.8%</td><td>225 BTC</td><td><span style="color:#66bb6a;">+8.9%</span></td><td><span class="badge badge-gray">Mixed</span></td></tr>
+    <tr style="font-weight:700; border-top: 2px solid #f7931a33; background:#111118;"><td colspan="2">Total BOB Chain TVL</td><td>$142,800,000</td><td>100%</td><td>1,284 BTC</td><td><span style="color:#66bb6a;">+12.3%</span></td><td></td></tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SECTION 4: INVOICES & PAYABLES
+     ═══════════════════════════════════════════ -->
+
+<div class="divider"></div>
+<div class="section-title"><span class="section-num">4</span>Invoices & Payables</div>
+
+<div class="grid">
+  <div class="card"><h3>Spend by Category (USD)</h3><div id="chart-spend"></div></div>
+  <div class="card"><h3>Monthly Burn Rate (USD)</h3><div id="chart-burn"></div></div>
+</div>
+
+<div class="full-width">
+<div class="card">
+<h3>Recent Invoices (AP Tracker)</h3>
+<table>
+  <thead><tr><th>Vendor</th><th>INV #</th><th>Type</th><th>Amount</th><th>Currency</th><th>Due Date</th><th>Method</th><th>Status</th><th>Aging</th></tr></thead>
+  <tbody>
+    <tr><td>Conduit (Sequencer)</td><td>INV-2026-041</td><td>Infra</td><td>$85,000</td><td>USD</td><td>Mar 15</td><td>Fireblocks (USDC)</td><td><span class="badge badge-green">Paid</span></td><td>-</td></tr>
+    <tr><td>OpenZeppelin</td><td>OZ-7821</td><td>Audit</td><td>$120,000</td><td>USD</td><td>Mar 10</td><td>Fireblocks (USDC)</td><td><span class="badge badge-green">Paid</span></td><td>-</td></tr>
+    <tr><td>Optimism (OP Stack)</td><td>OP-0294</td><td>Infra License</td><td>$50,000</td><td>USDC</td><td>Apr 1</td><td>Copper (USDC)</td><td><span class="badge badge-yellow">Pending</span></td><td><span class="badge badge-blue">1-30d</span></td></tr>
+    <tr><td>Dune Analytics</td><td>DUNE-1149</td><td>Analytics</td><td>$24,000</td><td>USD</td><td>Apr 5</td><td>-</td><td><span class="badge badge-yellow">Pending</span></td><td><span class="badge badge-blue">1-30d</span></td></tr>
+    <tr><td>Chainalysis</td><td>CA-99182</td><td>Compliance</td><td>$36,000</td><td>USD</td><td>Apr 10</td><td>-</td><td><span class="badge badge-yellow">Pending</span></td><td><span class="badge badge-blue">1-30d</span></td></tr>
+    <tr><td>Perkins Coie LLP</td><td>PC-8841</td><td>Legal</td><td>$62,500</td><td>USD</td><td>Mar 28</td><td>Wire</td><td><span class="badge badge-yellow">Pending</span></td><td><span class="badge badge-blue">1-30d</span></td></tr>
+    <tr><td>Immunefi</td><td>IF-2026-018</td><td>Bug Bounty</td><td>$45,000</td><td>USDC</td><td>Feb 28</td><td>Fireblocks (USDC)</td><td><span class="badge badge-yellow">Pending</span></td><td><span class="badge badge-yellow">31-60d</span></td></tr>
+    <tr><td>Gelato Network</td><td>GN-4420</td><td>Infra</td><td>$18,000</td><td>USDC</td><td>Feb 20</td><td>-</td><td><span class="badge badge-yellow">Pending</span></td><td><span class="badge badge-yellow">31-60d</span></td></tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+<div class="full-width">
+<div class="card">
+<h3>Latest Payment Run (Week of Mar 23, 2026)</h3>
+<table>
+  <thead><tr><th>Vendor</th><th>Type</th><th>Reason</th><th>Amount</th><th>Currency</th><th>Method</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr><td>Spice Ecosystem Grant #12</td><td>Grant</td><td>DeFi Integration (Babylon)</td><td>5,000,000</td><td>BOB</td><td>Fireblocks</td><td><span class="badge badge-green">Approved</span></td></tr>
+    <tr><td>Conduit</td><td>Infra</td><td>Monthly Sequencer Fees</td><td>$85,000</td><td>USDC</td><td>Fireblocks</td><td><span class="badge badge-yellow">Pending</span></td></tr>
+    <tr><td>DevRel Team</td><td>Contractor</td><td>Q1 Hackathon Coordination</td><td>$32,000</td><td>USDC</td><td>Copper</td><td><span class="badge badge-yellow">Pending</span></td></tr>
+    <tr><td>LP Incentive Epoch 14</td><td>Incentives</td><td>DEX LP Rewards</td><td>12,500,000</td><td>BOB</td><td>On-chain</td><td><span class="badge badge-yellow">Pending</span></td></tr>
+    <tr><td>AWS / Infra</td><td>Operations</td><td>Cloud + RPC Nodes</td><td>$14,200</td><td>USD</td><td>Corporate Card</td><td><span class="badge badge-yellow">Pending</span></td></tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SECTION 5: TOKEN ANALYTICS (LIVE)
+     ═══════════════════════════════════════════ -->
+
+<div class="divider"></div>
+<div class="section-title"><span class="section-num" style="background:#10b981;">5</span>$BOB Token Analytics <span class="live-badge">SAMPLE DATA</span></div>
+
+<div class="grid">
+  <div class="card"><h3>BOB Price History (12M)</h3><div id="chart-price" style="height:300px;"></div></div>
+  <div class="card"><h3>24h Trading Volume</h3><div id="chart-volume" style="height:300px;"></div></div>
+</div>
+<div class="grid">
+  <div class="card"><h3>Market Cap vs FDV (12M)</h3><div id="chart-mcap-fdv" style="height:300px;"></div></div>
+  <div class="card"><h3>BOB/BTC Correlation</h3><div id="chart-corr" style="height:300px;"></div></div>
+</div>
+
+<div class="full-width">
+<div class="card" style="margin-bottom:40px;">
+<h3>Top DEX Pairs</h3>
+<table>
+  <thead><tr><th>Pair</th><th>DEX</th><th>Chain</th><th>Price (USD)</th><th>24h Volume</th><th>Liquidity</th><th>24h Change</th><th>Txns (24h)</th></tr></thead>
+  <tbody>
+    <tr><td><strong>BOB/WETH</strong></td><td>Oku Trade</td><td>BOB</td><td>$0.00482</td><td>$1,240,000</td><td>$3,820,000</td><td><span style="color:#66bb6a;">+3.2%</span></td><td>4,218</td></tr>
+    <tr><td><strong>BOB/USDC</strong></td><td>Oku Trade</td><td>BOB</td><td>$0.00481</td><td>$890,000</td><td>$2,150,000</td><td><span style="color:#66bb6a;">+3.1%</span></td><td>2,847</td></tr>
+    <tr><td><strong>BOB/WBTC</strong></td><td>Oku Trade</td><td>BOB</td><td>$0.00483</td><td>$620,000</td><td>$1,480,000</td><td><span style="color:#66bb6a;">+3.4%</span></td><td>1,512</td></tr>
+    <tr><td><strong>BOB/ETH</strong></td><td>Uniswap V3</td><td>Ethereum</td><td>$0.00480</td><td>$340,000</td><td>$920,000</td><td><span style="color:#ef5350;">-0.8%</span></td><td>689</td></tr>
+    <tr><td><strong>BOB/USDT</strong></td><td>Gate.io</td><td>CEX</td><td>$0.00482</td><td>$2,100,000</td><td>-</td><td><span style="color:#66bb6a;">+2.9%</span></td><td>8,420</td></tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+<!-- Token Unlock Schedule -->
+<div class="section-title" style="padding-top:8px; font-size:16px;">Token Unlock Schedule</div>
+
+<div class="kpi-row">
+  <div class="kpi">
+    <div class="label">Next Unlock Date</div>
+    <div class="value" style="font-size:20px;">Apr 1, 2026</div>
+    <div class="sub neutral">9 days away</div>
+  </div>
+  <div class="kpi">
+    <div class="label">Next Unlock Amount</div>
+    <div class="value">260.4M</div>
+    <div class="sub">~$1.26M USD</div>
+  </div>
+  <div class="kpi">
+    <div class="label">Total Unlocked (To Date)</div>
+    <div class="value">3.24B</div>
+    <div class="sub">32.4% of supply</div>
+  </div>
+  <div class="kpi">
+    <div class="label">Total Locked</div>
+    <div class="value">6.76B</div>
+    <div class="sub neg">67.6% of supply</div>
+  </div>
+  <div class="kpi">
+    <div class="label">Next Cliff Unlock</div>
+    <div class="value" style="font-size:20px;">Passed</div>
+    <div class="sub neutral">All cliffs ended</div>
+  </div>
+</div>
+
+<div class="full-width">
+<div class="card" style="margin-bottom:40px;">
+<h3>Upcoming Token Unlock Events (Next 6 Months)</h3>
+<table>
+  <thead><tr><th>Date</th><th>Category</th><th>Tokens Unlocked</th><th>% of Supply</th><th>Est. Value (USD)</th><th>Type</th><th>Cumulative Circulating</th></tr></thead>
+  <tbody>
+    <tr><td>Apr 1, 2026</td><td>All Categories</td><td>260,402,778 BOB</td><td>2.60%</td><td>$1,255,141</td><td><span class="badge badge-orange">Monthly</span></td><td>3,500,402,778</td></tr>
+    <tr><td>May 1, 2026</td><td>All Categories</td><td>260,402,778 BOB</td><td>2.60%</td><td>$1,255,141</td><td><span class="badge badge-orange">Monthly</span></td><td>3,760,805,556</td></tr>
+    <tr><td>Jun 1, 2026</td><td>All Categories</td><td>218,736,111 BOB</td><td>2.19%</td><td>$1,054,308</td><td><span class="badge badge-orange">Monthly</span></td><td>3,979,541,667</td></tr>
+    <tr><td>Jul 1, 2026</td><td>All Categories</td><td>218,736,111 BOB</td><td>2.19%</td><td>$1,054,308</td><td><span class="badge badge-orange">Monthly</span></td><td>4,198,277,778</td></tr>
+    <tr><td>Aug 1, 2026</td><td>All Categories</td><td>168,736,111 BOB</td><td>1.69%</td><td>$813,308</td><td><span class="badge badge-orange">Monthly</span></td><td>4,367,013,889</td></tr>
+    <tr><td>Sep 1, 2026</td><td>All Categories</td><td>168,736,111 BOB</td><td>1.69%</td><td>$813,308</td><td><span class="badge badge-orange">Monthly</span></td><td>4,535,750,000</td></tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+<!-- Footer -->
+<div style="padding: 20px 40px; text-align: center; color: #555; font-size: 11px; border-top: 1px solid #ffffff08;">
+  Data sources: CoinGecko API, DefiLlama, DexScreener, BOB Explorer &nbsp;|&nbsp; Sample dashboard — not live data &nbsp;|&nbsp; Build on Bitcoin (BOB) &copy; 2026
+</div>
+
+<!-- ═══════════════════════════════════════════
+     CHARTS JS
+     ═══════════════════════════════════════════ -->
+<script>
+const darkLayout = {
+  paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
+  font: { color: '#8899aa', family: 'Segoe UI, Arial', size: 12 },
+  margin: { t: 10, b: 40, l: 60, r: 20 },
+  xaxis: { gridcolor: '#ffffff10', linecolor: '#ffffff15' },
+  yaxis: { gridcolor: '#ffffff10', linecolor: '#ffffff15' },
+  showlegend: true, legend: { font: { size: 11 } }
+};
+const config = { displayModeBar: false, responsive: true };
+const pieMargin = {t:10,b:10,l:10,r:10};
+
+// ── SECTION 1 CHARTS ──
+
+// Treasury Allocation by Asset
+Plotly.newPlot('chart-alloc', [{
+  values: [18620460, 3180500, 4420000, 1000000, 1519800],
+  labels: ['BTC — $18.62M', 'ETH — $3.18M', 'USDC — $4.42M', 'USDT+Other — $1.0M', 'BOB (Liquid) — $1.52M'],
+  type: 'pie', hole: 0.45,
+  marker: { colors: ['#f7931a', '#627eea', '#2775ca', '#26a17b', '#ff6b35'] },
+  textinfo: 'label+percent', textfont: { size: 11, color: '#fff' },
+  hovertemplate: '%{label}<br>$%{value:,.0f}<extra></extra>'
+}], {...darkLayout, margin: pieMargin, height: 320}, config);
+
+// Treasury by Custodian
+Plotly.newPlot('chart-platform-pie', [{
+  values: [15700000, 7368360, 3152600, 1000000, 1519800],
+  labels: ['Fireblocks — $15.70M', 'Copper — $7.37M', 'Anchorage — $3.15M', 'MultiSig — $1.0M', 'On-chain (BOB) — $1.52M'],
+  type: 'pie', hole: 0.45,
+  marker: { colors: ['#f7931a', '#3b82f6', '#8b5cf6', '#10b981', '#ff6b35'] },
+  textinfo: 'label+percent', textfont: { size: 10, color: '#fff' },
+  hovertemplate: '%{label}<br>$%{value:,.0f}<extra></extra>'
+}], {...darkLayout, margin: pieMargin, height: 320}, config);
+
+// Treasury by Platform & Asset
+Plotly.newPlot('chart-platform-bar', [{
+  x: ['Fireblocks<br>BTC', 'Fireblocks<br>ETH', 'Fireblocks<br>USDC', 'Fireblocks<br>USDT', 'Copper<br>BTC', 'Copper<br>ETH', 'Copper<br>USDC', 'Anchorage<br>BTC', 'Anchorage<br>ETH', 'MultiSig<br>USDC'],
+  y: [10927500, 1802500, 2150000, 820000, 5070360, 848000, 1450000, 2622600, 530000, 1000000],
+  type: 'bar',
+  marker: { color: ['#f7931a', '#627eea', '#2775ca', '#26a17b', '#f7931a', '#627eea', '#2775ca', '#f7931a', '#627eea', '#2775ca'] },
+  hovertemplate: '%{x}<br>$%{y:,.0f}<extra></extra>'
+}], {...darkLayout, height: 340, showlegend: false,
+  yaxis: {...darkLayout.yaxis, tickformat: '$,.0s'},
+  margin: {t:10, b:70, l:70, r:20}
+}, config);
+
+// Weekly Treasury Balance Trend
+Plotly.newPlot('chart-weekly', [{
+  x: ['12/12','12/19','12/26','01/02','01/09','01/16','01/23','01/30','02/06','02/13','02/20','02/27','03/06','03/13','03/20'],
+  y: [22100000,23400000,24200000,24800000,25100000,25600000,26200000,26800000,27100000,27400000,27800000,28100000,28300000,28500000,28740000],
+  type: 'scatter', mode: 'lines+markers',
+  line: { color: '#f7931a', width: 3 }, marker: { size: 6, color: '#f7931a' },
+  fill: 'tozeroy', fillcolor: 'rgba(247,147,26,0.08)',
+  hovertemplate: 'Week %{x}<br>$%{y:,.0f}<extra></extra>'
+}], {...darkLayout, height: 320, showlegend: false,
+  yaxis: {...darkLayout.yaxis, tickformat: '$,.0f', title: {text:'USD', font:{size:11}}}
+}, config);
+
+// ── SECTION 2 CHARTS ──
+
+// Token Allocation
+Plotly.newPlot('chart-token', [{
+  values: [1500, 1200, 2500, 2000, 1800, 1000],
+  labels: ['Team (15%)', 'Investors (12%)', 'Ecosystem (25%)', 'Community (20%)', 'Foundation (18%)', 'Liquidity (10%)'],
+  type: 'pie', hole: 0.45,
+  marker: { colors: ['#ef4444', '#f97316', '#22c55e', '#8b5cf6', '#3b82f6', '#06b6d4'] },
+  textinfo: 'label+percent', textfont: { size: 10, color: '#fff' },
+  hovertemplate: '%{label}<br>%{value}M BOB<extra></extra>'
+}], {...darkLayout, margin: pieMargin, height: 320}, config);
+
+// Token Release Schedule
+const months = ['Mar-25','Apr-25','May-25','Jun-25','Jul-25','Aug-25','Sep-25','Oct-25','Nov-25','Dec-25','Jan-26','Feb-26','Mar-26'];
+const cumSupply = [1250000000,1510402778,1770805556,2031208333,2291611111,2552013889,2812416667,3020000000,3240000000,3240000000,3240000000,3240000000,3240000000];
+Plotly.newPlot('chart-release', [{
+  x: months, y: cumSupply,
+  type: 'scatter', mode: 'lines+markers',
+  line: { color: '#f7931a', width: 3 }, marker: { size: 6, color: '#f7931a' },
+  fill: 'tozeroy', fillcolor: 'rgba(247,147,26,0.08)', name: 'Circulating Supply',
+  hovertemplate: '%{x}<br>%{y:,.0f} BOB<extra></extra>'
+},{
+  x: months, y: Array(months.length).fill(10000000000),
+  type: 'scatter', mode: 'lines', line: { color: '#ffffff30', width: 1, dash: 'dot' }, name: 'Total Supply (10B)'
+}], {...darkLayout, height: 320,
+  yaxis: {...darkLayout.yaxis, tickformat: ',.0s', title: {text:'BOB Tokens', font:{size:11}}}
+}, config);
+
+// Foundation Breakdown
+Plotly.newPlot('chart-foundation', [{
+  values: [1381250000, 418750000],
+  labels: ['Locked (1.38B BOB)', 'Unlocked (418.8M BOB)'],
+  type: 'pie', hole: 0.5,
+  marker: { colors: ['#1e40af', '#3b82f6'] },
+  textinfo: 'label+percent', textfont: { size: 11, color: '#fff' },
+  hovertemplate: '%{label}<br>%{value:,.0f} BOB<extra></extra>'
+}], {...darkLayout, margin: pieMargin, height: 300,
+  annotations: [{text:'<b>1.8B</b><br>BOB', showarrow:false, font:{size:14,color:'#fff'}, x:0.5, y:0.5}]
+}, config);
+
+// Ecosystem Fund
+Plotly.newPlot('chart-ecosystem', [{
+  x: ['Active Grants', 'LP Incentives', 'Hackathons &<br>Bounties', 'Deployed<br>(Spent)','Remaining'],
+  y: [380000000, 450000000, 120000000, 650000000, 900000000],
+  type: 'bar',
+  marker: { color: ['#22c55e', '#06b6d4', '#8b5cf6', '#ef4444', '#3b82f6'] },
+  text: ['380M', '450M', '120M', '650M', '900M'],
+  textposition: 'outside', textfont: { size: 10, color: '#8899aa' },
+  hovertemplate: '%{x}<br>%{y:,.0f} BOB<extra></extra>'
+}], {...darkLayout, height: 300, showlegend: false,
+  yaxis: {...darkLayout.yaxis, tickformat: ',.0s', title: {text:'BOB Tokens', font:{size:11}}},
+  margin: {t:10, b:60, l:70, r:20}
+}, config);
+
+// ── SECTION 3 CHARTS ──
+
+// TVL by Protocol
+Plotly.newPlot('chart-tvl-protocol', [{
+  values: [42150000, 28400000, 21800000, 14200000, 11900000, 9450000, 8100000, 6800000],
+  labels: ['Segment Finance', 'Oku Trade', 'LayerBank', 'Shoebill', 'Avalon Finance', 'SolvBTC', 'Pell Network', 'Others'],
+  type: 'pie', hole: 0.45,
+  marker: { colors: ['#f7931a', '#3b82f6', '#8b5cf6', '#22c55e', '#06b6d4', '#ef4444', '#f59e0b', '#6b7280'] },
+  textinfo: 'label+percent', textfont: { size: 10, color: '#fff' },
+  hovertemplate: '%{label}<br>$%{value:,.0f}<extra></extra>'
+}], {...darkLayout, margin: pieMargin, height: 340}, config);
+
+// TVL Trend
+const tvlMonths = ['Apr-25','May-25','Jun-25','Jul-25','Aug-25','Sep-25','Oct-25','Nov-25','Dec-25','Jan-26','Feb-26','Mar-26'];
+const tvlValues = [28000000,42000000,55000000,68000000,78000000,85000000,96000000,108000000,118000000,125000000,134000000,142800000];
+Plotly.newPlot('chart-tvl-trend', [{
+  x: tvlMonths, y: tvlValues,
+  type: 'scatter', mode: 'lines+markers',
+  line: { color: '#22c55e', width: 3 }, marker: { size: 6, color: '#22c55e' },
+  fill: 'tozeroy', fillcolor: 'rgba(34,197,94,0.08)',
+  hovertemplate: '%{x}<br>$%{y:,.0f}<extra></extra>'
+}], {...darkLayout, height: 340, showlegend: false,
+  yaxis: {...darkLayout.yaxis, tickformat: '$,.0s', title: {text:'TVL (USD)', font:{size:11}}}
+}, config);
+
+// Bridge BTC Inflows
+const bridgeMonths = ['Apr-25','May-25','Jun-25','Jul-25','Aug-25','Sep-25','Oct-25','Nov-25','Dec-25','Jan-26','Feb-26','Mar-26'];
+const btcBridged = [85,142,210,340,480,560,680,790,920,1050,1180,1284];
+Plotly.newPlot('chart-bridge', [{
+  x: bridgeMonths, y: btcBridged,
+  type: 'scatter', mode: 'lines+markers',
+  line: { color: '#f7931a', width: 3 }, marker: { size: 7, color: '#f7931a' },
+  fill: 'tozeroy', fillcolor: 'rgba(247,147,26,0.1)',
+  hovertemplate: '%{x}<br>%{y:,.0f} BTC<extra></extra>'
+}], {...darkLayout, height: 340, showlegend: false,
+  yaxis: {...darkLayout.yaxis, title: {text:'BTC Bridged (cumulative)', font:{size:11}}}
+}, config);
+
+// Daily Active Addresses
+const days30 = Array.from({length:30}, (_, i) => {
+  const d = new Date(2026, 1, 22 + i);
+  return (d.getMonth()+1) + '/' + d.getDate();
+});
+const daaVals = [8200,9100,8800,10200,11400,9800,8500,9600,10800,11200,12400,11800,10500,9200,10100,11600,12800,13200,11900,10400,11200,12600,13800,14200,12800,11400,12200,13400,14800,15200];
+Plotly.newPlot('chart-daa', [{
+  x: days30, y: daaVals,
+  type: 'bar',
+  marker: { color: daaVals.map(v => v > 12000 ? '#f7931a' : '#f7931a88') },
+  hovertemplate: '%{x}<br>%{y:,.0f} addresses<extra></extra>'
+}], {...darkLayout, height: 340, showlegend: false,
+  yaxis: {...darkLayout.yaxis, title: {text:'Active Addresses', font:{size:11}}},
+  margin: {t:10, b:40, l:60, r:20}
+}, config);
+
+// ── SECTION 4 CHARTS ──
+
+// Spend by Category
+Plotly.newPlot('chart-spend', [{
+  values: [420000, 285000, 180000, 145000, 95000, 75000],
+  labels: ['Infrastructure — $420K', 'Engineering — $285K', 'Grants — $180K', 'Legal & Compliance — $145K', 'Marketing — $95K', 'Operations — $75K'],
+  type: 'pie', hole: 0.45,
+  marker: { colors: ['#f7931a', '#3b82f6', '#22c55e', '#8b5cf6', '#f59e0b', '#6b7280'] },
+  textinfo: 'label+percent', textfont: { size: 10, color: '#fff' },
+  hovertemplate: '%{label}<extra></extra>'
+}], {...darkLayout, margin: pieMargin, height: 320}, config);
+
+// Monthly Burn Rate
+Plotly.newPlot('chart-burn', [{
+  x: ['Oct-25','Nov-25','Dec-25','Jan-26','Feb-26','Mar-26'],
+  y: [980000,1050000,1120000,1180000,1250000,1300000],
+  type: 'bar',
+  marker: { color: '#ef4444' },
+  hovertemplate: '%{x}<br>$%{y:,.0f}<extra></extra>'
+},{
+  x: ['Oct-25','Nov-25','Dec-25','Jan-26','Feb-26','Mar-26'],
+  y: [1100000,1100000,1100000,1100000,1100000,1100000],
+  type: 'scatter', mode: 'lines',
+  line: { color: '#ffffff40', dash: 'dot', width: 2 },
+  name: 'Budget Target'
+}], {...darkLayout, height: 320,
+  yaxis: {...darkLayout.yaxis, tickformat: '$,.0s', title: {text:'Monthly Spend', font:{size:11}}}
+}, config);
+
+// ── SECTION 5 CHARTS ──
+
+// Price History
+const priceMonths = ['Apr-25','May-25','Jun-25','Jul-25','Aug-25','Sep-25','Oct-25','Nov-25','Dec-25','Jan-26','Feb-26','Mar-26'];
+const prices = [0.00120,0.00185,0.00240,0.00310,0.00280,0.00350,0.00390,0.00420,0.00460,0.00440,0.00465,0.00482];
+Plotly.newPlot('chart-price', [{
+  x: priceMonths, y: prices,
+  type: 'scatter', mode: 'lines+markers',
+  line: { color: '#f7931a', width: 3 }, marker: { size: 6, color: '#f7931a' },
+  fill: 'tozeroy', fillcolor: 'rgba(247,147,26,0.08)',
+  hovertemplate: '%{x}<br>$%{y:.5f}<extra></extra>'
+}], {...darkLayout, height: 300, showlegend: false,
+  yaxis: {...darkLayout.yaxis, tickformat: '$.4f', title: {text:'BOB Price (USD)', font:{size:11}}}
+}, config);
+
+// Volume
+const volMonths = priceMonths;
+const volumes = [1200000,2800000,4200000,6100000,4800000,5600000,7200000,8400000,9100000,7800000,8600000,9200000];
+Plotly.newPlot('chart-volume', [{
+  x: volMonths, y: volumes,
+  type: 'bar',
+  marker: { color: volumes.map(v => v > 7000000 ? '#f7931a' : '#f7931a88') },
+  hovertemplate: '%{x}<br>$%{y:,.0f}<extra></extra>'
+}], {...darkLayout, height: 300, showlegend: false,
+  yaxis: {...darkLayout.yaxis, tickformat: '$,.0s', title: {text:'24h Volume (USD)', font:{size:11}}}
+}, config);
+
+// Market Cap vs FDV
+const mcaps = prices.map(p => p * 3240000000);
+const fdvs = prices.map(p => p * 10000000000);
+Plotly.newPlot('chart-mcap-fdv', [{
+  x: priceMonths, y: mcaps,
+  type: 'scatter', mode: 'lines+markers', name: 'Market Cap',
+  line: { color: '#3b82f6', width: 2 }, marker: { size: 5, color: '#3b82f6' },
+  hovertemplate: '%{x}<br>$%{y:,.0f}<extra></extra>'
+},{
+  x: priceMonths, y: fdvs,
+  type: 'scatter', mode: 'lines+markers', name: 'FDV',
+  line: { color: '#8b5cf6', width: 2, dash: 'dot' }, marker: { size: 5, color: '#8b5cf6' },
+  hovertemplate: '%{x}<br>$%{y:,.0f}<extra></extra>'
+}], {...darkLayout, height: 300,
+  yaxis: {...darkLayout.yaxis, tickformat: '$,.0s'}
+}, config);
+
+// BOB/BTC Correlation
+const btcPrices = [68000,72000,75000,80000,78000,82000,84000,85000,86000,85500,86500,87420];
+const bobBtcRatio = prices.map((p, i) => (p / btcPrices[i]) * 1e8);
+Plotly.newPlot('chart-corr', [{
+  x: priceMonths, y: bobBtcRatio,
+  type: 'scatter', mode: 'lines+markers', name: 'BOB/BTC (sats)',
+  line: { color: '#f7931a', width: 2 }, marker: { size: 5, color: '#f7931a' },
+  hovertemplate: '%{x}<br>%{y:.2f} sats<extra></extra>'
+}], {...darkLayout, height: 300, showlegend: false,
+  yaxis: {...darkLayout.yaxis, title: {text:'BOB price in sats', font:{size:11}}}
+}, config);
+
+</script>
+</body>
+</html>
