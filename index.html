@@ -710,15 +710,29 @@ async function fetchDefiLlama(){
 
 async function fetchStablecoins(){
   try{
+    const CHAIN_NAMES=['Bob','BOB','bob'];
     const r=await fetch('https://stablecoins.llama.fi/stablecoins?includePrices=true');const d=await r.json();
-    let cs=[];
-    if(d.peggedAssets)cs=d.peggedAssets.filter(s=>s.chainCirculating?.[DEFILLAMA_CHAIN]).map(s=>({name:s.name,symbol:s.symbol,circ:s.chainCirculating[DEFILLAMA_CHAIN]?.current?.peggedUSD||0})).filter(s=>s.circ>0).sort((a,b)=>b.circ-a.circ);
+    let cs=[],usedChain='';
+    if(d.peggedAssets){
+      for(const cn of CHAIN_NAMES){
+        cs=d.peggedAssets.filter(s=>s.chainCirculating?.[cn]).map(s=>({name:s.name,symbol:s.symbol,circ:s.chainCirculating[cn]?.current?.peggedUSD||0})).filter(s=>s.circ>0).sort((a,b)=>b.circ-a.circ);
+        if(cs.length){usedChain=cn;break;}
+      }
+    }
     const tot=cs.reduce((s,c)=>s+c.circ,0);
-    setText('kpi-stables',fUSD(tot));
-    if(cs.length){setText('kpi-dom-stable',cs[0].symbol);setText('kpi-dom-stable-pct',tot>0?((cs[0].circ/tot)*100).toFixed(1)+'% dominance':'—');}
-    if(cs.length){Plotly.newPlot('chart-stables',[{values:cs.map(s=>s.circ),labels:cs.map(s=>s.symbol+' — '+fUSD(s.circ)),type:'pie',hole:0.45,marker:{colors:['#2775ca','#26a17b','#f7931a','#3b82f6','#8b5cf6']},textinfo:'label+percent',textfont:{size:11,color:'#fff'}}],{...DL,margin:PM,height:320},CFG);}
-    try{const tr=await fetch(`https://stablecoins.llama.fi/stablecoincharts/${DEFILLAMA_CHAIN}?stablecoin=`);const td=await tr.json();
-      if(td?.length){Plotly.newPlot('chart-stables-trend',[{x:td.map(d=>new Date(d.date*1000)),y:td.map(d=>Object.values(d.totalCirculating||{}).reduce((s,v)=>s+(v?.peggedUSD||0),0)),type:'scatter',mode:'lines',line:{color:'#2775ca',width:2},fill:'tozeroy',fillcolor:'rgba(39,117,202,0.08)'}],{...DL,height:320,showlegend:false,yaxis:{...DL.yaxis,tickprefix:'$',tickformat:',.0s'}},CFG);}}catch(e){}
+    if(tot>0){
+      setText('kpi-stables',fUSD(tot));
+      if(cs.length){setText('kpi-dom-stable',cs[0].symbol);setText('kpi-dom-stable-pct',tot>0?((cs[0].circ/tot)*100).toFixed(1)+'% dominance':'—');}
+      Plotly.newPlot('chart-stables',[{values:cs.map(s=>s.circ),labels:cs.map(s=>s.symbol+' — '+fUSD(s.circ)),type:'pie',hole:0.45,marker:{colors:['#2775ca','#26a17b','#f7931a','#3b82f6','#8b5cf6']},textinfo:'label+percent',textfont:{size:11,color:'#fff'}}],{...DL,margin:PM,height:320},CFG);
+    }else{
+      setText('kpi-stables','N/A');setText('kpi-dom-stable','N/A');setText('kpi-dom-stable-pct','No stablecoin data found for BOB chain');
+      document.getElementById('chart-stables').innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#8899aa;">No stablecoin data available for BOB chain on DefiLlama</div>';
+    }
+    const chartChain=usedChain||DEFILLAMA_CHAIN;
+    try{const tr=await fetch(`https://stablecoins.llama.fi/stablecoincharts/${chartChain}`);const td=await tr.json();
+      if(Array.isArray(td)&&td.length){Plotly.newPlot('chart-stables-trend',[{x:td.map(d=>new Date(d.date*1000)),y:td.map(d=>Object.values(d.totalCirculating||{}).reduce((s,v)=>s+(v?.peggedUSD||0),0)),type:'scatter',mode:'lines',line:{color:'#2775ca',width:2},fill:'tozeroy',fillcolor:'rgba(39,117,202,0.08)'}],{...DL,height:320,showlegend:false,yaxis:{...DL.yaxis,tickprefix:'$',tickformat:',.0s'}},CFG);}
+      else{document.getElementById('chart-stables-trend').innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#8899aa;">No stablecoin trend data available</div>';}
+    }catch(e){document.getElementById('chart-stables-trend').innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#8899aa;">Stablecoin trend data unavailable</div>';}
     return true;
   }catch(e){apiErrors.push('Stablecoins: '+e.message);return false;}
 }
