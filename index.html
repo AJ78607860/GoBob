@@ -38,25 +38,21 @@
   .badge-blue { background: #1e90ff22; color: #1e90ff; }
   .badge-gray { background: #ffffff15; color: #8899aa; }
   .badge-orange { background: #f7931a22; color: #f7931a; }
+  .badge-purple { background: #8b5cf622; color: #8b5cf6; }
   .section-num { display: inline-block; background: #f7931a; color: #fff; width: 28px; height: 28px; border-radius: 50%; text-align: center; line-height: 28px; font-size: 14px; font-weight: 700; margin-right: 10px; }
   .section-title { padding: 24px 40px 8px; font-size: 18px; font-weight: 600; color: #fff; }
   .divider { height: 2px; background: linear-gradient(90deg, #f7931a33, transparent); margin: 12px 40px; }
   .live-badge { display: inline-block; background: #10b98122; color: #10b981; padding: 2px 10px; border-radius: 12px; font-size: 10px; font-weight: 600; margin-left: 10px; letter-spacing: 0.5px; }
+  .static-badge { display: inline-block; background: #f7931a22; color: #f7931a; padding: 2px 10px; border-radius: 12px; font-size: 10px; font-weight: 600; margin-left: 10px; letter-spacing: 0.5px; }
   .refresh-btn { background: #f7931a22; border: 1px solid #f7931a44; color: #f7931a; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; transition: background 0.2s; }
   .refresh-btn:hover { background: #f7931a33; }
   .error-msg { color: #ef5350; font-size: 12px; text-align: center; padding: 20px; }
   .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #ffffff30; border-top-color: #f7931a; border-radius: 50%; animation: spin 0.8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
-
   @media (max-width: 900px) {
     .grid { grid-template-columns: 1fr; }
-    .header { padding: 20px; }
-    .kpi-row { padding: 16px 20px; }
-    .grid, .full-width { padding-left: 20px; padding-right: 20px; }
-    .section-title { padding-left: 20px; }
-    .divider { margin-left: 20px; margin-right: 20px; }
+    .header, .kpi-row, .grid, .full-width, .section-title, .divider { padding-left: 20px; padding-right: 20px; margin-left: 0; margin-right: 0; }
   }
-
   @media print {
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     body { background: #fff !important; color: #1a1a2e !important; }
@@ -65,10 +61,10 @@
     .refresh-btn, .live-dot { display: none !important; }
     .kpi { background: #f8f9fb !important; border: 1px solid #ddd !important; }
     .kpi .value { color: #0d1b2a !important; }
-    .card { background: #fff !important; border: 1px solid #ddd !important; }
+    .card { background: #fff !important; border: 1px solid #ddd !important; break-inside: avoid !important; }
     .card h3 { color: #333 !important; }
-    th { color: #333 !important; }
-    td { color: #1a1a2e !important; }
+    th { color: #333 !important; } td { color: #1a1a2e !important; }
+    .badge { border: 1px solid currentColor !important; }
     @page { size: A3 landscape; margin: 10mm; }
   }
 </style>
@@ -79,10 +75,7 @@
 <div class="header">
   <div>
     <h1><span class="accent">&#x20BF;</span> Build on Bitcoin <span class="accent">($BOB)</span> — Treasury Dashboard</h1>
-    <div class="date">
-      <span class="live-dot"></span>
-      <span id="last-refresh" style="font-size:11px; color:#66bb6a;">Loading live data...</span>
-    </div>
+    <div class="date">Report Date: March 20, 2026 &nbsp;|&nbsp; <span class="live-dot"></span><span id="last-refresh" style="font-size:11px; color:#66bb6a;">Loading live data...</span></div>
   </div>
   <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
     <div class="price-tag" id="header-bob-price">BOB <span class="spinner"></span></div>
@@ -92,33 +85,285 @@
   </div>
 </div>
 
-<!-- ═══════════════ SECTION 1: TOKEN KPIs ═══════════════ -->
-<div class="section-title"><span class="section-num">1</span>$BOB Token Overview <span class="live-badge">LIVE — CoinGecko</span></div>
+<!-- ═══════════════════════════════════════════
+     SECTION 1: TREASURY SUMMARY & TOTALS
+     ═══════════════════════════════════════════ -->
+<div class="section-title"><span class="section-num">1</span>Treasury Summary & Totals</div>
+
+<div class="kpi-row">
+  <div class="kpi"><div class="label">Total Treasury Value</div><div class="value">$5.97M</div><div class="sub neutral">Excl. BOB Token</div></div>
+  <div class="kpi"><div class="label">BOB Liquid</div><div class="value">$8.49M</div><div class="sub">48,974,125 BOB</div></div>
+  <div class="kpi"><div class="label">Fiat Holdings</div><div class="value">$3.66M</div><div class="sub neutral">USD in Tenet Bank</div></div>
+  <div class="kpi"><div class="label">Stablecoin Holdings</div><div class="value">$2.30M</div><div class="sub neutral">USDC + USDT across custodians</div></div>
+  <div class="kpi"><div class="label">Crypto Holdings</div><div class="value">$3,995</div><div class="sub neutral">ETH across Fireblocks + Bitgo</div></div>
+  <div class="kpi"><div class="label">Monthly Burn Rate</div><div class="value neg">-$943K</div><div class="sub neg">Net monthly cash outflow</div></div>
+  <div class="kpi"><div class="label">Treasury Runway</div><div class="value">~6.3 mo</div><div class="sub neg">At current burn rate</div></div>
+  <div class="kpi"><div class="label">Weekly Net Change</div><div class="value neg">-$218K</div><div class="sub neg">This week</div></div>
+</div>
+
+<div class="grid">
+  <div class="card"><h3>Treasury Allocation by Asset (USD)</h3><div id="chart-alloc"></div></div>
+  <div class="card"><h3>Treasury by Custodian/Platform (USD)</h3><div id="chart-platform"></div></div>
+</div>
+
+<div class="grid">
+  <div class="card"><h3>Treasury by Platform & Asset Detail</h3><div id="chart-platform-bar"></div></div>
+  <div class="card"><h3>Weekly Treasury Balance Trend (USD)</h3><div id="chart-weekly"></div></div>
+</div>
+
+<div class="full-width">
+<div class="card">
+<h3>Treasury Holdings by Platform (All Assets)</h3>
+<table>
+  <thead><tr><th>Platform</th><th>Asset</th><th>Native Units</th><th>Value (USD)</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr style="background:#f7931a08;"><td><strong>Tenet Bank</strong></td><td>USD</td><td>3,660,250 USD</td><td>$3,660,250</td><td><span class="badge badge-green">Liquid</span></td></tr>
+    <tr><td>Fireblocks</td><td>USDC</td><td>1,786,669 USDC</td><td>$1,786,669</td><td><span class="badge badge-green">Liquid</span></td></tr>
+    <tr><td>Fireblocks</td><td>USDT</td><td>5,651 USDT</td><td>$5,651</td><td><span class="badge badge-green">Liquid</span></td></tr>
+    <tr><td>Fireblocks</td><td>ETH</td><td>1.362 ETH</td><td>$2,894</td><td><span class="badge badge-green">Liquid</span></td></tr>
+    <tr><td>Fireblocks</td><td>USDT (Polygon)</td><td>2,906 USDT</td><td>$2,906</td><td><span class="badge badge-green">Liquid</span></td></tr>
+    <tr><td>Fireblocks</td><td>USDC (Polygon)</td><td>214 USDC</td><td>$214</td><td><span class="badge badge-green">Liquid</span></td></tr>
+    <tr><td>Gearbox</td><td>USDC.e</td><td>250,000 USDC.e</td><td>$250,000</td><td><span class="badge badge-green">Liquid</span></td></tr>
+    <tr><td>Bitgo</td><td>USDC</td><td>259,931 USDC</td><td>$259,931</td><td><span class="badge badge-green">Liquid</span></td></tr>
+    <tr><td>Bitgo</td><td>ETH</td><td>0.58 ETH</td><td>$1,101</td><td><span class="badge badge-green">Liquid</span></td></tr>
+    <tr style="border-top: 2px solid #f7931a33;"><td>Bitgo</td><td>Foundation Locked (BOB)</td><td>0 BOB</td><td>$0</td><td><span class="badge badge-blue">Locked</span></td></tr>
+    <tr><td>Bitgo</td><td>Foundation Unlocked (BOB)</td><td>18,710,576 BOB</td><td>$3,244,414</td><td><span class="badge badge-green">Liquid</span></td></tr>
+    <tr><td>Bitgo</td><td>Community Locked (BOB)</td><td>123,352,940 BOB</td><td>$21,389,400</td><td><span class="badge badge-blue">Locked</span></td></tr>
+    <tr><td>Bitgo</td><td>Community Unlocked (BOB)</td><td>24,383,817 BOB</td><td>$4,228,154</td><td><span class="badge badge-green">Liquid</span></td></tr>
+    <tr><td>Bitgo</td><td>BOB TokenCo</td><td>2,309,843 BOB</td><td>$400,527</td><td><span class="badge badge-green">Liquid</span></td></tr>
+    <tr style="background:#f7931a08;"><td><strong>Bitgo</strong></td><td><strong>BOB Liquid (Found. + Comm.)</strong></td><td><strong>43,094,393 BOB</strong></td><td><strong>$7,472,568</strong></td><td><span class="badge badge-orange">Subtotal</span></td></tr>
+    <tr style="background:#8b5cf608;"><td><strong>Bitgo</strong></td><td><strong>BOB Locked (Found. + Comm.)</strong></td><td><strong>123,352,940 BOB</strong></td><td><strong>$21,389,400</strong></td><td><span class="badge badge-purple">Subtotal</span></td></tr>
+    <tr><td>MultiSig</td><td>Airdrop (wBOB)</td><td>3,569,889 wBOB</td><td>$619,019</td><td><span class="badge badge-yellow">Pending Return</span></td></tr>
+    <tr><td>On-chain</td><td>Validator Contracts (BOB)</td><td>18,788,318 BOB</td><td>$3,257,894</td><td><span class="badge badge-gray">Staked</span></td></tr>
+    <tr style="font-weight:700; border-top: 2px solid #f7931a33; background:#111118;"><td colspan="2">Total Liquid USD/USDC</td><td>5,965,621</td><td>$5,969,616</td><td></td></tr>
+    <tr style="font-weight:700; background:#111118;"><td colspan="2">Total Liquid BOB</td><td>48,974,125 BOB</td><td>$8,492,113</td><td></td></tr>
+    <tr style="font-weight:700; background:#0d0d14; font-size:14px; border-top: 2px solid #f7931a66;"><td colspan="2">Total Liquid</td><td></td><td>$14,461,729</td><td></td></tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SECTION 2: TOKENOMICS & TOKEN INFO
+     ═══════════════════════════════════════════ -->
+<div class="divider"></div>
+<div class="section-title"><span class="section-num">2</span>Tokenomics & Token Info</div>
+
+<div class="kpi-row">
+  <div class="kpi"><div class="label">Total Supply</div><div class="value">1.0B</div><div class="sub neutral">BOB Tokens</div></div>
+  <div class="kpi"><div class="label">Circulating Supply</div><div class="value">234.5M</div><div class="sub">23.4% of total</div></div>
+  <div class="kpi"><div class="label">Total Locked</div><div class="value">765.5M</div><div class="sub neutral">76.6% of total</div></div>
+  <div class="kpi"><div class="label">Initial Circ. Supply</div><div class="value">160.2M</div><div class="sub neutral">16.02% at TGE</div></div>
+</div>
+
+<div class="grid">
+  <div class="card"><h3>BOB Token Allocation (1B Total Supply)</h3><div id="chart-token"></div></div>
+  <div class="card"><h3>Token Release Schedule (Cumulative Circulating Supply)</h3><div id="chart-release"></div></div>
+</div>
+
+<div class="full-width">
+<div class="card">
+<h3>Token Vesting Schedule</h3>
+<table>
+  <thead><tr><th>Basket</th><th>Total Allocation (BOB)</th><th>% of Supply</th><th>TGE Unlock (BOB)</th><th>Cliff</th><th>Vesting</th><th>Monthly Release (BOB)</th></tr></thead>
+  <tbody>
+    <tr><td>Team</td><td>110,000,000 BOB</td><td>11.0%</td><td>0</td><td>12 months</td><td>48 months linear</td><td>2,291,667 BOB</td></tr>
+    <tr><td>Launch Partners</td><td>150,000,000 BOB</td><td>15.0%</td><td>0</td><td>12 months</td><td>48 months linear</td><td>3,125,000 BOB</td></tr>
+    <tr><td>Investors</td><td>151,500,000 BOB</td><td>15.15%</td><td>0</td><td>12 months</td><td>36 months linear</td><td>4,208,333 BOB</td></tr>
+    <tr><td>Advisors</td><td>35,800,000 BOB</td><td>3.58%</td><td>0</td><td>12 months</td><td>36 months linear</td><td>994,444 BOB</td></tr>
+    <tr><td>Foundation</td><td>273,450,000 BOB</td><td>27.35%</td><td>50,750,000 BOB</td><td>None</td><td>48 months linear</td><td>4,639,583 BOB</td></tr>
+    <tr><td>Community</td><td>279,250,000 BOB</td><td>27.93%</td><td>109,450,000 BOB</td><td>None</td><td>34 months linear</td><td>4,111,765 BOB</td></tr>
+    <tr style="font-weight:700; border-top: 2px solid #f7931a33;"><td>Total</td><td>1,000,000,000 BOB</td><td>100%</td><td>160,200,000 BOB</td><td colspan="3"></td></tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+<!-- Foundation Disclosure -->
+<div class="section-title" style="padding-top:8px; font-size:16px;">Foundation Token Disclosure</div>
+
+<div class="grid">
+  <div class="card"><h3>Foundation Token Balance Breakdown</h3><div id="chart-foundation"></div></div>
+  <div class="card"><h3>Foundation Liquidity Breakdown</h3><div id="chart-foundation-liq"></div></div>
+</div>
+
+<div class="full-width">
+<div class="card">
+<h3>Foundation Allocation &mdash; 273,450,000 BOB (27.35% of Total Supply)</h3>
+<table>
+  <thead><tr><th>Category</th><th>BOB Tokens</th><th>% of Allocation</th><th>Value (USD)</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr><td>Initial Allocation</td><td>273,450,000 BOB</td><td>100.0%</td><td>$47,416,230</td><td><span class="badge badge-gray">Total</span></td></tr>
+    <tr><td>Unlocked at TGE</td><td>50,750,000 BOB</td><td>18.6%</td><td>$8,800,050</td><td><span class="badge badge-green">Unlocked</span></td></tr>
+    <tr><td>Unlocked on Schedule (To Date)</td><td>27,837,500 BOB</td><td>10.2%</td><td>$4,827,023</td><td><span class="badge badge-green">Unlocked</span></td></tr>
+    <tr style="background:#f7931a08;"><td><strong>Total Unlocked (To Date)</strong></td><td><strong>78,587,500 BOB</strong></td><td><strong>28.7%</strong></td><td><strong>$13,627,073</strong></td><td><span class="badge badge-green">Unlocked</span></td></tr>
+    <tr style="background:#1e90ff08;"><td><strong>Remaining (Locked)</strong></td><td><strong>194,862,500 BOB</strong></td><td><strong>71.3%</strong></td><td><strong>$33,789,158</strong></td><td><span class="badge badge-blue">Locked</span></td></tr>
+  </tbody>
+</table>
+<h3 style="margin-top:20px;">Foundation Liquidity Detail</h3>
+<table>
+  <thead><tr><th>Location</th><th>BOB Tokens</th><th>Value (USD)</th><th>Liquidity</th></tr></thead>
+  <tbody>
+    <tr><td>Unlocked in Validator Contracts (not liquid)</td><td>18,788,318 BOB</td><td>$3,257,894</td><td><span class="badge badge-gray">Staked</span></td></tr>
+    <tr><td>Unlocked in Bitgo Wallets (liquid)</td><td>21,020,419 BOB</td><td>$3,644,941</td><td><span class="badge badge-green">Liquid</span></td></tr>
+    <tr style="background:#f7931a08;"><td><strong>Total Foundation Unlocked Balance</strong></td><td><strong>39,808,737 BOB</strong></td><td><strong>$6,902,835</strong></td><td></td></tr>
+    <tr style="background:#ef535010;"><td><strong>Foundation Tokens Spent (To Date)</strong></td><td><strong>38,778,763 BOB</strong></td><td><strong>$6,724,238</strong></td><td><span class="badge badge-red">Spent</span></td></tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+<!-- Community Disclosure -->
+<div class="section-title" style="padding-top:8px; font-size:16px;">Community Token Disclosure</div>
+
+<div class="grid">
+  <div class="card"><h3>Community Token Balance Breakdown</h3><div id="chart-community"></div></div>
+  <div class="card"><h3>Community Liquidity Breakdown</h3><div id="chart-community-liq"></div></div>
+</div>
+
+<div class="full-width">
+<div class="card">
+<h3>Community Allocation &mdash; 279,250,000 BOB (27.93% of Total Supply)</h3>
+<table>
+  <thead><tr><th>Category</th><th>BOB Tokens</th><th>% of Allocation</th><th>Value (USD)</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr><td>Initial Allocation</td><td>279,250,000 BOB</td><td>100.0%</td><td>$48,421,950</td><td><span class="badge badge-gray">Total</span></td></tr>
+    <tr><td>Unlocked at TGE</td><td>109,450,000 BOB</td><td>39.2%</td><td>$18,978,630</td><td><span class="badge badge-green">Unlocked</span></td></tr>
+    <tr><td>Unlocked on Schedule (To Date)</td><td>46,447,060 BOB</td><td>16.6%</td><td>$8,053,920</td><td><span class="badge badge-green">Unlocked</span></td></tr>
+    <tr style="background:#8b5cf608;"><td><strong>Total Unlocked (To Date)</strong></td><td><strong>155,897,060 BOB</strong></td><td><strong>55.8%</strong></td><td><strong>$27,032,550</strong></td><td><span class="badge badge-green">Unlocked</span></td></tr>
+    <tr style="background:#1e90ff08;"><td><strong>Remaining (Locked)</strong></td><td><strong>123,352,940 BOB</strong></td><td><strong>44.2%</strong></td><td><strong>$21,389,400</strong></td><td><span class="badge badge-blue">Locked</span></td></tr>
+  </tbody>
+</table>
+<h3 style="margin-top:20px;">Community Liquidity Detail</h3>
+<table>
+  <thead><tr><th>Location</th><th>BOB Tokens</th><th>Value (USD)</th><th>Liquidity</th></tr></thead>
+  <tbody>
+    <tr><td>Unlocked in Bitgo Wallets (liquid)</td><td>24,383,817 BOB</td><td>$4,228,154</td><td><span class="badge badge-green">Liquid</span></td></tr>
+    <tr><td>wBOB in Airdrop Wallet (liquid)</td><td>3,569,889 wBOB</td><td>$619,019</td><td><span class="badge badge-yellow">Pending Return</span></td></tr>
+    <tr style="background:#8b5cf608;"><td><strong>Total Community Unlocked Balance</strong></td><td><strong>27,953,706 BOB</strong></td><td><strong>$4,847,173</strong></td><td></td></tr>
+    <tr style="background:#ef535010;"><td><strong>Community Tokens Spent (To Date)</strong></td><td><strong>127,943,354 BOB</strong></td><td><strong>$22,185,378</strong></td><td><span class="badge badge-red">Spent</span></td></tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SECTION 3: INVOICES & ACCOUNTS PAYABLE
+     ═══════════════════════════════════════════ -->
+<div class="divider"></div>
+<div class="section-title"><span class="section-num">3</span>Invoices & Accounts Payable</div>
+
+<div class="kpi-row">
+  <div class="kpi"><div class="label">Outstanding Invoices</div><div class="value neg">$2.25M</div><div class="sub neg">Total AP liability</div></div>
+  <div class="kpi"><div class="label">Paid This Period</div><div class="value">$497K</div><div class="sub">15 invoices cleared</div></div>
+  <div class="kpi"><div class="label">Pending Approval</div><div class="value">$628K</div><div class="sub neutral">4 invoices</div></div>
+  <div class="kpi"><div class="label">On Hold</div><div class="value">$593K</div><div class="sub neutral">Awaiting review</div></div>
+</div>
+
+<div class="grid">
+  <div class="card"><h3>Spend by Category (USD)</h3><div id="chart-spend"></div></div>
+  <div class="card"><h3>Invoice Aging Distribution</h3><div id="chart-aging"></div></div>
+</div>
+
+<div class="full-width">
+<div class="card">
+<h3>Invoice Tracker (AP Ledger)</h3>
+<table>
+  <thead><tr><th>Vendor</th><th>INV #</th><th>Type</th><th>Amount</th><th>Currency</th><th>Due Date</th><th>Method</th><th>Status</th><th>Aging</th></tr></thead>
+  <tbody>
+    <tr><td>Campbells</td><td>240734</td><td>Legal</td><td>$945</td><td>USD</td><td>Nov 22</td><td>Tenet (Wire)</td><td><span class="badge badge-green">Paid</span></td><td>-</td></tr>
+    <tr><td>Lair Finance</td><td>-</td><td>Ecosystem</td><td>$54,000</td><td>USD</td><td>-</td><td>Bitgo (BOB)</td><td><span class="badge badge-green">Paid</span></td><td>-</td></tr>
+    <tr><td>Antithesis</td><td>INV-381</td><td>Infra</td><td>$55,150</td><td>USD</td><td>Mar 10</td><td>Tenet (Wire)</td><td><span class="badge badge-green">Paid</span></td><td>-</td></tr>
+    <tr><td>Toku</td><td>INV-5021</td><td>Salary</td><td>$241,051</td><td>USD</td><td>Feb 24</td><td>Tenet (Wire)</td><td><span class="badge badge-green">Paid</span></td><td>-</td></tr>
+    <tr><td>Bitgo</td><td>T00001-352105</td><td>Custody</td><td>$20,000</td><td>USD</td><td>Mar 2</td><td>Bitgo</td><td><span class="badge badge-green">Paid</span></td><td>-</td></tr>
+    <tr><td>Improbable</td><td>M2-185</td><td>Infra</td><td>$176,672</td><td>USD</td><td>Feb 4</td><td>Tenet (Wire)</td><td><span class="badge badge-yellow">Pending</span></td><td><span class="badge badge-yellow">31-60d</span></td></tr>
+    <tr><td>Improbable Worlds</td><td>VSF024</td><td>Engineering</td><td>$394,141</td><td>USD</td><td>Mar 6</td><td>Tenet (Wire)</td><td><span class="badge badge-orange">On Hold</span></td><td><span class="badge badge-blue">1-30d</span></td></tr>
+    <tr><td>Improbable Worlds</td><td>VSF022</td><td>Engineering</td><td>$197,166</td><td>USD</td><td>Mar 6</td><td>Tenet (Wire)</td><td><span class="badge badge-orange">On Hold</span></td><td><span class="badge badge-blue">1-30d</span></td></tr>
+    <tr><td>Flowdesk</td><td>INVFR202602</td><td>Market Making</td><td>$30,000</td><td>USD</td><td>Mar 9</td><td>Tenet (Wire)</td><td><span class="badge badge-yellow">Pending</span></td><td><span class="badge badge-blue">1-30d</span></td></tr>
+    <tr><td>Perkins & Coie</td><td>7328022</td><td>Legal</td><td>$1,775</td><td>USD</td><td>Mar 16</td><td>Tenet (Wire)</td><td><span class="badge badge-orange">On Hold</span></td><td><span class="badge badge-blue">1-30d</span></td></tr>
+    <tr><td>Ledger</td><td>LDGR4363858</td><td>Infra</td><td>$50,000</td><td>USD</td><td>Mar 12</td><td>Tenet (Wire)</td><td><span class="badge badge-yellow">Pending</span></td><td><span class="badge badge-blue">1-30d</span></td></tr>
+    <tr><td>Messari</td><td>004173</td><td>Marketing</td><td>$25,000</td><td>USD</td><td>Mar 25</td><td>Fireblocks</td><td><span class="badge badge-yellow">Initiated</span></td><td><span class="badge badge-blue">1-30d</span></td></tr>
+    <tr><td>Improbable</td><td>VSF025</td><td>Validator</td><td>$328,382</td><td>SOMI</td><td>Mar 25</td><td>Bitgo</td><td><span class="badge badge-yellow">Pending</span></td><td><span class="badge badge-blue">1-30d</span></td></tr>
+    <tr><td>Improbable</td><td>VSF023</td><td>Validator</td><td>$747,437</td><td>SOMI</td><td>Mar 25</td><td>Bitgo</td><td><span class="badge badge-yellow">Pending</span></td><td><span class="badge badge-blue">1-30d</span></td></tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+<div class="full-width">
+<div class="card">
+<h3>Latest Payment Run (Week of Mar 18, 2026)</h3>
+<table>
+  <thead><tr><th>Vendor</th><th>Type</th><th>Reason</th><th>Amount</th><th>Currency</th><th>Method</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr><td>Selim Cetiner</td><td>Ambassador</td><td>Regional Ambassador</td><td>9,000</td><td>BOB</td><td>Bitgo</td><td><span class="badge badge-yellow">Test initiated</span></td></tr>
+    <tr><td>Nikolaev Maksim</td><td>Contractor</td><td>Engineering Support</td><td>3,000</td><td>BOB</td><td>Bitgo</td><td><span class="badge badge-yellow">Not Paid Yet</span></td></tr>
+    <tr><td>BCW</td><td>Compute</td><td>BOB Rewards for 2 Nodes</td><td>99,203</td><td>BOB</td><td>Bitgo</td><td><span class="badge badge-orange">On Hold</span></td></tr>
+    <tr><td>Improbable</td><td>Infra</td><td>Regular monthly</td><td>$176,672</td><td>USD</td><td>Tenet (Wire)</td><td><span class="badge badge-yellow">Pending</span></td></tr>
+    <tr><td>London Registrars</td><td>Operations</td><td>RO fees</td><td>GBP 120</td><td>GBP</td><td>Tenet</td><td><span class="badge badge-yellow">Not Paid Yet</span></td></tr>
+    <tr><td>Campbells</td><td>Operations</td><td>Certificate of good standing</td><td>$1,300</td><td>USD</td><td>Tenet</td><td><span class="badge badge-yellow">Not Paid Yet</span></td></tr>
+    <tr><td>Kurve</td><td>Operations</td><td>AI team training</td><td>$23,230</td><td>USD</td><td>Tenet</td><td><span class="badge badge-yellow">Initiated</span></td></tr>
+    <tr><td>Tech Ops Services</td><td>Engineering</td><td>Hosting - Blockchain support</td><td>$9,000</td><td>USD</td><td>Fireblocks</td><td><span class="badge badge-yellow">Initiated</span></td></tr>
+    <tr><td>Feb Validator Top Up</td><td>Validator</td><td>Monthly emission commitment</td><td>$180,497</td><td>USD</td><td>Fireblocks</td><td><span class="badge badge-yellow">Not Paid Yet</span></td></tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SECTION 4: WORKING CAPITAL & BURN RATE
+     ═══════════════════════════════════════════ -->
+<div class="divider"></div>
+<div class="section-title"><span class="section-num">4</span>Working Capital & Burn Rate Analysis</div>
+
+<div class="kpi-row">
+  <div class="kpi"><div class="label">Liquid Assets</div><div class="value">$5.97M</div><div class="sub neutral">Fiat + Stablecoins + ETH</div></div>
+  <div class="kpi"><div class="label">Outstanding Liabilities</div><div class="value neg">$2.25M</div><div class="sub neg">Unpaid invoices</div></div>
+  <div class="kpi"><div class="label">Net Working Capital</div><div class="value">$3.72M</div><div class="sub neutral">Liquid - Liabilities</div></div>
+  <div class="kpi"><div class="label">Monthly Burn Rate</div><div class="value neg">-$943K</div><div class="sub neg">Avg. monthly outflow</div></div>
+  <div class="kpi"><div class="label">Runway (Non-BOB)</div><div class="value">~6.3 mo</div><div class="sub neg">Liquid assets / burn rate</div></div>
+  <div class="kpi"><div class="label">Runway (Incl. Liquid BOB)</div><div class="value">~15.3 mo</div><div class="sub">$14.46M / $943K</div></div>
+</div>
+
+<div class="grid">
+  <div class="card"><h3>Weekly Treasury Movement (Spend Categories)</h3><div id="chart-spend-cat"></div></div>
+  <div class="card"><h3>Monthly Burn Rate Trend</h3><div id="chart-burn"></div></div>
+</div>
+
+<div class="grid">
+  <div class="card"><h3>Working Capital Waterfall</h3><div id="chart-waterfall"></div></div>
+  <div class="card"><h3>Runway Projection</h3><div id="chart-runway"></div></div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SECTION 5: $BOB TOKEN ANALYTICS (LIVE)
+     ═══════════════════════════════════════════ -->
+<div class="divider"></div>
+<div class="section-title"><span class="section-num" style="background:#10b981;">5</span>$BOB Token Analytics & Network KPIs <span class="live-badge">LIVE DATA</span></div>
 
 <div class="kpi-row" id="token-kpis">
   <div class="kpi"><div class="label">BOB Price</div><div class="value loading" id="kpi-price"><span class="spinner"></span> Loading</div><div class="sub neutral" id="kpi-price-chg">—</div></div>
   <div class="kpi"><div class="label">Market Cap</div><div class="value loading" id="kpi-mcap"><span class="spinner"></span> Loading</div><div class="sub neutral" id="kpi-mcap-rank">—</div></div>
   <div class="kpi"><div class="label">24h Volume</div><div class="value loading" id="kpi-vol"><span class="spinner"></span> Loading</div><div class="sub neutral" id="kpi-vol-chg">—</div></div>
-  <div class="kpi"><div class="label">Fully Diluted Val.</div><div class="value loading" id="kpi-fdv"><span class="spinner"></span> Loading</div><div class="sub neutral" id="kpi-fdv-ratio">—</div></div>
+  <div class="kpi"><div class="label">FDV</div><div class="value loading" id="kpi-fdv"><span class="spinner"></span> Loading</div><div class="sub neutral" id="kpi-fdv-ratio">—</div></div>
   <div class="kpi"><div class="label">Circulating Supply</div><div class="value loading" id="kpi-circ"><span class="spinner"></span> Loading</div><div class="sub neutral" id="kpi-circ-pct">—</div></div>
-  <div class="kpi"><div class="label">Total Supply</div><div class="value loading" id="kpi-total"><span class="spinner"></span> Loading</div><div class="sub neutral" id="kpi-max">—</div></div>
-  <div class="kpi"><div class="label">ATH</div><div class="value loading" id="kpi-ath"><span class="spinner"></span> Loading</div><div class="sub neutral" id="kpi-ath-chg">—</div></div>
-  <div class="kpi"><div class="label">ATL</div><div class="value loading" id="kpi-atl"><span class="spinner"></span> Loading</div><div class="sub neutral" id="kpi-atl-chg">—</div></div>
+  <div class="kpi"><div class="label">ATH / ATL</div><div class="value loading" id="kpi-ath"><span class="spinner"></span> Loading</div><div class="sub neutral" id="kpi-ath-chg">—</div></div>
 </div>
 
-<!-- Price & Volume Charts -->
 <div class="grid">
-  <div class="card"><h3>BOB Price History (90d) <span class="live-badge">LIVE</span></h3><div id="chart-price" style="height:320px;"></div></div>
-  <div class="card"><h3>24h Trading Volume (90d) <span class="live-badge">LIVE</span></h3><div id="chart-volume" style="height:320px;"></div></div>
+  <div class="card"><h3>BOB Price History (12M) <span class="live-badge">LIVE</span></h3><div id="chart-price" style="height:320px;"></div></div>
+  <div class="card"><h3>24h Trading Volume (12M) <span class="live-badge">LIVE</span></h3><div id="chart-volume" style="height:320px;"></div></div>
 </div>
 <div class="grid">
-  <div class="card"><h3>Market Cap vs FDV (90d) <span class="live-badge">LIVE</span></h3><div id="chart-mcap-fdv" style="height:320px;"></div></div>
-  <div class="card"><h3>BOB Price vs BTC Price (Correlation) <span class="live-badge">LIVE</span></h3><div id="chart-corr" style="height:320px;"></div></div>
+  <div class="card"><h3>Market Cap vs FDV (12M) <span class="live-badge">LIVE</span></h3><div id="chart-mcap-fdv" style="height:320px;"></div></div>
+  <div class="card"><h3>BOB Price vs BTC Price — 12M Correlation <span class="live-badge">LIVE</span></h3><div id="chart-corr" style="height:320px;"></div></div>
 </div>
 
-<!-- ═══════════════ SECTION 2: BOB CHAIN TVL ═══════════════ -->
+<!-- ═══════════════════════════════════════════
+     SECTION 6: BOB CHAIN TVL
+     ═══════════════════════════════════════════ -->
 <div class="divider"></div>
-<div class="section-title"><span class="section-num">2</span>BOB Chain — TVL & Protocol Breakdown <span class="live-badge">LIVE — DefiLlama</span></div>
+<div class="section-title"><span class="section-num" style="background:#10b981;">6</span>BOB Chain — TVL & Protocol Breakdown <span class="live-badge">LIVE — DefiLlama</span></div>
 
 <div class="kpi-row" id="tvl-kpis">
   <div class="kpi"><div class="label">BOB Chain TVL</div><div class="value loading" id="kpi-tvl"><span class="spinner"></span> Loading</div><div class="sub neutral" id="kpi-tvl-chg">—</div></div>
@@ -144,9 +389,11 @@
 </div>
 </div>
 
-<!-- ═══════════════ SECTION 3: DEX PAIRS ═══════════════ -->
+<!-- ═══════════════════════════════════════════
+     SECTION 7: DEX PAIRS
+     ═══════════════════════════════════════════ -->
 <div class="divider"></div>
-<div class="section-title"><span class="section-num">3</span>$BOB DEX Trading Pairs <span class="live-badge">LIVE — DexScreener</span></div>
+<div class="section-title"><span class="section-num" style="background:#10b981;">7</span>$BOB DEX Trading Pairs <span class="live-badge">LIVE — DexScreener</span></div>
 
 <div class="kpi-row" id="dex-kpis">
   <div class="kpi"><div class="label">Total DEX Liquidity</div><div class="value loading" id="kpi-dex-liq"><span class="spinner"></span></div><div class="sub neutral">across all pairs</div></div>
@@ -164,7 +411,7 @@
 <div class="card">
 <h3>All DEX Pairs <span class="live-badge">LIVE</span></h3>
 <table>
-  <thead><tr><th>Pair</th><th>DEX</th><th>Chain</th><th>Price (USD)</th><th>24h Volume</th><th>Liquidity</th><th>5m</th><th>1h</th><th>24h</th><th>Buys/Sells (24h)</th></tr></thead>
+  <thead><tr><th>Pair</th><th>DEX</th><th>Chain</th><th>Price (USD)</th><th>24h Volume</th><th>Liquidity</th><th>5m</th><th>1h</th><th>24h</th><th>Buys/Sells</th></tr></thead>
   <tbody id="dex-table-body">
     <tr><td colspan="10" style="text-align:center; color:#8899aa; padding:30px;"><span class="spinner"></span> Loading pairs from DexScreener...</td></tr>
   </tbody>
@@ -172,9 +419,11 @@
 </div>
 </div>
 
-<!-- ═══════════════ SECTION 4: STABLECOINS ON BOB ═══════════════ -->
+<!-- ═══════════════════════════════════════════
+     SECTION 8: STABLECOINS ON BOB
+     ═══════════════════════════════════════════ -->
 <div class="divider"></div>
-<div class="section-title"><span class="section-num">4</span>Stablecoins on BOB Chain <span class="live-badge">LIVE — DefiLlama</span></div>
+<div class="section-title"><span class="section-num" style="background:#10b981;">8</span>Stablecoins on BOB Chain <span class="live-badge">LIVE — DefiLlama</span></div>
 
 <div class="kpi-row" id="stable-kpis">
   <div class="kpi"><div class="label">Total Stablecoins</div><div class="value loading" id="kpi-stables"><span class="spinner"></span></div><div class="sub neutral">on BOB chain</div></div>
@@ -186,566 +435,324 @@
   <div class="card"><h3>Stablecoin TVL Trend on BOB <span class="live-badge">LIVE</span></h3><div id="chart-stables-trend" style="height:320px;"></div></div>
 </div>
 
-<!-- ═══════════════ FOOTER ═══════════════ -->
+<!-- Footer -->
 <div style="padding: 20px 40px; text-align: center; color: #555; font-size: 11px; border-top: 1px solid #ffffff08; margin-top: 20px;">
-  Data sources: <strong>CoinGecko</strong> (token data) · <strong>DefiLlama</strong> (TVL, protocols, stablecoins) · <strong>DexScreener</strong> (DEX pairs) &nbsp;|&nbsp;
-  Auto-refreshes every 5 minutes &nbsp;|&nbsp; Build on Bitcoin (BOB) &copy; 2026 &nbsp;|&nbsp;
+  Data sources: <strong>CoinGecko</strong> (token) · <strong>DefiLlama</strong> (TVL, protocols, stablecoins) · <strong>DexScreener</strong> (DEX pairs) · Internal Treasury Data &nbsp;|&nbsp;
+  Live sections auto-refresh every 5 minutes &nbsp;|&nbsp; Build on Bitcoin (BOB) &copy; 2026 &nbsp;|&nbsp;
   <span id="footer-status" style="color:#66bb6a;">Initializing...</span>
 </div>
 
 <!-- ═══════════════════════════════════════════
-     JAVASCRIPT: LIVE API INTEGRATIONS
+     JAVASCRIPT: STATIC CHARTS + LIVE API
      ═══════════════════════════════════════════ -->
 <script>
-// ── CONFIG ──
-const COINGECKO_ID = 'bob';  // CoinGecko slug — will auto-detect
-const COINGECKO_IDS_TO_TRY = ['bob', 'bob-build-on-bitcoin', 'gobob', 'build-on-bitcoin'];
-const DEFILLAMA_CHAIN = 'BOB';
-const DEXSCREENER_QUERY = 'BOB';
-const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 min
+const DL = {
+  paper_bgcolor:'transparent', plot_bgcolor:'transparent',
+  font:{color:'#8899aa',family:'Segoe UI, Arial',size:12},
+  margin:{t:10,b:40,l:60,r:20},
+  xaxis:{gridcolor:'#ffffff10',linecolor:'#ffffff15'},
+  yaxis:{gridcolor:'#ffffff10',linecolor:'#ffffff15'},
+  showlegend:true, legend:{font:{size:11}}
+};
+const CFG = {displayModeBar:false,responsive:true};
+const PM = {t:10,b:10,l:10,r:10};
 
-// ── CHART CONFIG ──
-const darkLayout = {
-  paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
-  font: { color: '#8899aa', family: 'Segoe UI, Arial', size: 12 },
-  margin: { t: 10, b: 40, l: 60, r: 20 },
-  xaxis: { gridcolor: '#ffffff10', linecolor: '#ffffff15' },
-  yaxis: { gridcolor: '#ffffff10', linecolor: '#ffffff15' },
-  showlegend: true, legend: { font: { size: 11 } }
-};
-const cfg = { displayModeBar: false, responsive: true };
-const pieM = { t: 10, b: 10, l: 10, r: 10 };
-
-// ── FORMATTERS ──
-const fUSD = n => {
-  if (n == null) return 'N/A';
-  if (n >= 1e9) return '$' + (n / 1e9).toFixed(2) + 'B';
-  if (n >= 1e6) return '$' + (n / 1e6).toFixed(2) + 'M';
-  if (n >= 1e3) return '$' + (n / 1e3).toFixed(1) + 'K';
-  if (n >= 1) return '$' + n.toFixed(2);
-  if (n >= 0.0001) return '$' + n.toFixed(6);
-  return '$' + n.toExponential(2);
-};
-const fNum = n => {
-  if (n == null) return 'N/A';
-  if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
-  if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
-  if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
-  return n.toLocaleString();
-};
-const fPct = n => {
-  if (n == null) return '—';
-  const s = (n >= 0 ? '+' : '') + n.toFixed(2) + '%';
-  return s;
-};
-const pctClass = n => (n == null ? 'neutral' : n >= 0 ? '' : 'neg');
-const pctColor = n => (n == null ? '#8899aa' : n >= 0 ? '#66bb6a' : '#ef5350');
-
-let resolvedCoinGeckoId = null;
-let apiErrors = [];
+const fUSD=n=>{if(n==null)return'N/A';if(n>=1e9)return'$'+(n/1e9).toFixed(2)+'B';if(n>=1e6)return'$'+(n/1e6).toFixed(2)+'M';if(n>=1e3)return'$'+(n/1e3).toFixed(1)+'K';if(n>=1)return'$'+n.toFixed(2);if(n>=0.0001)return'$'+n.toFixed(6);return'$'+n.toExponential(2)};
+const fNum=n=>{if(n==null)return'N/A';if(n>=1e9)return(n/1e9).toFixed(2)+'B';if(n>=1e6)return(n/1e6).toFixed(2)+'M';if(n>=1e3)return(n/1e3).toFixed(1)+'K';return n.toLocaleString()};
+const fPct=n=>{if(n==null)return'—';return(n>=0?'+':'')+n.toFixed(2)+'%'};
+const pctColor=n=>(n==null?'#8899aa':n>=0?'#66bb6a':'#ef5350');
+const pctClass=n=>(n==null?'neutral':n>=0?'':'neg');
 
 // ══════════════════════════════════════════
-// 1. CoinGecko — Token Data
+// SECTION 1: STATIC TREASURY CHARTS
 // ══════════════════════════════════════════
-async function detectCoinGeckoId() {
-  // Try search endpoint first
-  try {
-    const r = await fetch('https://api.coingecko.com/api/v3/search?query=build+on+bitcoin+bob');
-    const d = await r.json();
-    if (d.coins && d.coins.length > 0) {
-      // Look for the best match
-      const match = d.coins.find(c => c.symbol && c.symbol.toUpperCase() === 'BOB') || d.coins[0];
-      if (match) return match.id;
-    }
-  } catch(e) {}
+Plotly.newPlot('chart-alloc',[{
+  values:[3660250,2296600,8557,3995,8492113],
+  labels:['USD (Fiat) — $3.66M','USDC — $2.30M','USDT — $8.6K','ETH — $4.0K','BOB (Liquid) — $8.49M'],
+  type:'pie',hole:0.45,
+  marker:{colors:['#f7931a','#10b981','#f59e0b','#627eea','#8b5cf6']},
+  textinfo:'label+percent',textfont:{size:11,color:'#fff'},
+  hovertemplate:'%{label}<br>$%{value:,.0f}<extra></extra>'
+}],{...DL,margin:PM,height:320},CFG);
 
-  // Fallback: try known IDs
-  for (const id of COINGECKO_IDS_TO_TRY) {
-    try {
-      const r = await fetch(`https://api.coingecko.com/api/v3/coins/${id}?localization=false&tickers=false&community_data=false&developer_data=false`);
-      if (r.ok) return id;
-    } catch(e) {}
-  }
+Plotly.newPlot('chart-platform',[{
+  values:[3660250,1798334,29534027,250000,619019,3257894],
+  labels:['Tenet Bank — $3.66M','Fireblocks — $1.80M','Bitgo — $29.53M','Gearbox — $250K','MultiSig (wBOB) — $619K','Validators — $3.26M'],
+  type:'pie',hole:0.45,
+  marker:{colors:['#f7931a','#3b82f6','#f59e0b','#10b981','#fbbf24','#6b7280']},
+  textinfo:'label+percent',textfont:{size:10,color:'#fff'},
+  hovertemplate:'%{label}<br>$%{value:,.0f}<extra></extra>'
+}],{...DL,margin:PM,height:320},CFG);
+
+Plotly.newPlot('chart-platform-bar',[{
+  x:['Tenet<br>USD','FB<br>USDC','FB<br>USDT','FB<br>ETH','Bitgo<br>USDC','Bitgo<br>ETH','Gearbox<br>USDC.e','Bitgo BOB<br>Liquid','Bitgo BOB<br>Locked','Bitgo<br>TokenCo','MultiSig<br>wBOB','Validators<br>BOB'],
+  y:[3660250,1786669,8557,2894,259931,1101,250000,7472568,21389400,400527,619019,3257894],
+  type:'bar',
+  marker:{color:['#f7931a','#3b82f6','#3b82f6','#627eea','#f59e0b','#627eea','#10b981','#8b5cf6','#6d28d9','#a78bfa','#fbbf24','#6b7280']},
+  hovertemplate:'%{x}<br>$%{y:,.0f}<extra></extra>'
+}],{...DL,height:340,showlegend:false,yaxis:{...DL.yaxis,tickformat:'$,.0s'},margin:{t:10,b:70,l:70,r:20}},CFG);
+
+Plotly.newPlot('chart-weekly',[{
+  x:['12/12','12/19','12/26','01/02','01/09','01/16','01/23','01/30','02/06','02/13','02/20','02/27','03/06','03/13','03/20'],
+  y:[1266263,1016229,9860052,9844802,10177193,9912738,9536476,9134385,8769920,8213504,8037266,7985462,7747520,6699410,5555839],
+  type:'scatter',mode:'lines+markers',
+  line:{color:'#f7931a',width:3},marker:{size:6,color:'#f7931a'},
+  fill:'tozeroy',fillcolor:'rgba(247,147,26,0.08)',
+  hovertemplate:'Week %{x}<br>$%{y:,.0f}<extra></extra>'
+}],{...DL,height:320,showlegend:false,yaxis:{...DL.yaxis,tickformat:'$,.0f',title:{text:'USD',font:{size:11}}}},CFG);
+
+// ══════════════════════════════════════════
+// SECTION 2: TOKENOMICS CHARTS
+// ══════════════════════════════════════════
+Plotly.newPlot('chart-token',[{
+  values:[110,150,151.5,35.8,273.45,279.25],
+  labels:['Team (11%)','Launch Partners (15%)','Investors (15.15%)','Advisors (3.58%)','Foundation (27.35%)','Community (27.93%)'],
+  type:'pie',hole:0.45,
+  marker:{colors:['#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#8b5cf6']},
+  textinfo:'label+percent',textfont:{size:10,color:'#fff'},
+  hovertemplate:'%{label}<br>%{value}M BOB<extra></extra>'
+}],{...DL,margin:PM,height:320},CFG);
+
+const mos=['Sep-25','Oct-25','Nov-25','Dec-25','Jan-26','Feb-26','Mar-26','Apr-26','May-26','Jun-26','Jul-26','Aug-26','Sep-26','Oct-26','Nov-26'];
+const cum=[160200000,184839583,199479167,208230515,216981863,225733211,234484559,243235907,251987255,260738603,269489951,278241299,414425980,433796773,453167565];
+Plotly.newPlot('chart-release',[{
+  x:mos,y:cum,type:'scatter',mode:'lines+markers',
+  line:{color:'#f7931a',width:3},marker:{size:6,color:'#f7931a'},
+  fill:'tozeroy',fillcolor:'rgba(247,147,26,0.08)',name:'Circulating Supply',
+  hovertemplate:'%{x}<br>%{y:,.0f} BOB<extra></extra>'
+},{
+  x:mos,y:Array(mos.length).fill(1000000000),
+  type:'scatter',mode:'lines',line:{color:'#ffffff30',width:1,dash:'dot'},name:'Total Supply (1B)'
+}],{...DL,height:320,yaxis:{...DL.yaxis,tickformat:',.0s',title:{text:'BOB Tokens',font:{size:11}}}},CFG);
+
+// Foundation pie
+Plotly.newPlot('chart-foundation',[{
+  values:[194862500,78587500],labels:['Locked (194.9M BOB)','Unlocked (78.6M BOB)'],
+  type:'pie',hole:0.5,marker:{colors:['#1e40af','#3b82f6']},
+  textinfo:'label+percent',textfont:{size:11,color:'#fff'}
+}],{...DL,margin:PM,height:300,annotations:[{text:'<b>273.5M</b><br>BOB',showarrow:false,font:{size:14,color:'#fff'},x:0.5,y:0.5}]},CFG);
+
+Plotly.newPlot('chart-foundation-liq',[{
+  x:['Validator<br>Contracts','Bitgo Wallets<br>(Liquid)','Spent<br>(To Date)'],
+  y:[18788318,21020419,38778763],type:'bar',
+  marker:{color:['#6b7280','#3b82f6','#ef4444']},
+  text:['18.8M BOB<br>$3.26M','21.0M BOB<br>$3.64M','38.8M BOB<br>$6.72M'],
+  textposition:'outside',textfont:{size:10,color:'#8899aa'}
+}],{...DL,height:300,showlegend:false,yaxis:{...DL.yaxis,tickformat:',.0s'},margin:{t:10,b:60,l:70,r:20}},CFG);
+
+// Community pie
+Plotly.newPlot('chart-community',[{
+  values:[123352940,155897060],labels:['Locked (123.4M BOB)','Unlocked (155.9M BOB)'],
+  type:'pie',hole:0.5,marker:{colors:['#6d28d9','#8b5cf6']},
+  textinfo:'label+percent',textfont:{size:11,color:'#fff'}
+}],{...DL,margin:PM,height:300,annotations:[{text:'<b>279.3M</b><br>BOB',showarrow:false,font:{size:14,color:'#fff'},x:0.5,y:0.5}]},CFG);
+
+Plotly.newPlot('chart-community-liq',[{
+  x:['Bitgo Wallets<br>(Liquid)','Airdrop Wallet<br>(wBOB)','Spent<br>(To Date)'],
+  y:[24383817,3569889,127943354],type:'bar',
+  marker:{color:['#8b5cf6','#fbbf24','#ef4444']},
+  text:['24.4M BOB<br>$4.23M','3.6M wBOB<br>$619K','127.9M BOB<br>$22.19M'],
+  textposition:'outside',textfont:{size:10,color:'#8899aa'}
+}],{...DL,height:300,showlegend:false,yaxis:{...DL.yaxis,tickformat:',.0s'},margin:{t:10,b:60,l:70,r:20}},CFG);
+
+// ══════════════════════════════════════════
+// SECTION 3: SPEND & AGING CHARTS
+// ══════════════════════════════════════════
+Plotly.newPlot('chart-spend',[{
+  values:[591307,394141,55150,54000,20945,45000,25000],
+  labels:['Engineering — $591K','Infra — $394K','Infra (Antithesis) — $55K','Ecosystem — $54K','Legal — $21K','Ecosystem (Dreamathon) — $45K','Marketing — $25K'],
+  type:'pie',hole:0.45,
+  marker:{colors:['#f7931a','#3b82f6','#06b6d4','#22c55e','#8b5cf6','#f59e0b','#ec4899']},
+  textinfo:'label+percent',textfont:{size:10,color:'#fff'}
+}],{...DL,margin:PM,height:320},CFG);
+
+Plotly.newPlot('chart-aging',[{
+  x:['Paid','1-30 Days','31-60 Days','90+ Days'],
+  y:[15,8,3,2],type:'bar',
+  marker:{color:['#66bb6a','#3b82f6','#ffa726','#ef5350']},
+  text:['15 invoices','8 invoices','3 invoices','2 invoices'],
+  textposition:'outside',textfont:{size:11,color:'#8899aa'}
+}],{...DL,height:320,showlegend:false,yaxis:{...DL.yaxis,title:{text:'# Invoices',font:{size:11}}},margin:{t:10,b:40,l:60,r:20}},CFG);
+
+// ══════════════════════════════════════════
+// SECTION 4: WORKING CAPITAL & BURN CHARTS
+// ══════════════════════════════════════════
+Plotly.newPlot('chart-spend-cat',[{
+  x:['Grants','Token Sale','Operational','Payroll','Vendor','Marketing'],
+  y:[-368183,0,-368183,0,0,0],type:'bar',name:'This Week',
+  marker:{color:'#ef5350'}
+},{
+  x:['Grants','Token Sale','Operational','Payroll','Vendor','Marketing'],
+  y:[-180000,-50000,-420000,-241000,-80000,-25000],type:'bar',name:'Last Month',
+  marker:{color:'#f7931a88'}
+}],{...DL,height:320,barmode:'group',yaxis:{...DL.yaxis,tickformat:'$,.0s'},margin:{t:10,b:40,l:70,r:20}},CFG);
+
+Plotly.newPlot('chart-burn',[{
+  x:['Oct-25','Nov-25','Dec-25','Jan-26','Feb-26','Mar-26 (proj)'],
+  y:[-780000,-850000,-920000,-980000,-943000,-960000],type:'bar',
+  marker:{color:['#f7931a','#f7931a','#f7931a','#f7931a','#ef5350','#ef535088']},
+  hovertemplate:'%{x}<br>%{y:$,.0f}<extra></extra>'
+},{
+  x:['Oct-25','Nov-25','Dec-25','Jan-26','Feb-26','Mar-26 (proj)'],
+  y:[-900000,-900000,-900000,-900000,-900000,-900000],
+  type:'scatter',mode:'lines',line:{color:'#ffffff40',dash:'dot',width:2},name:'Budget Target'
+}],{...DL,height:320,yaxis:{...DL.yaxis,tickformat:'$,.0s',title:{text:'Monthly Spend',font:{size:11}}}},CFG);
+
+// Waterfall
+Plotly.newPlot('chart-waterfall',[{
+  x:['Liquid Assets','(-) Outstanding AP','Net Working Capital','(+) Liquid BOB','Total Available'],
+  y:[5969616,-2248003,3721613,8492113,14461729],type:'waterfall',
+  connector:{line:{color:'#ffffff20'}},
+  increasing:{marker:{color:'#66bb6a'}},decreasing:{marker:{color:'#ef5350'}},totals:{marker:{color:'#f7931a'}},
+  textposition:'outside',textfont:{size:10,color:'#8899aa'},
+  text:['$5.97M','-$2.25M','$3.72M','+$8.49M','$14.46M'],
+  measure:['absolute','relative','total','relative','total']
+}],{...DL,height:320,showlegend:false,yaxis:{...DL.yaxis,tickformat:'$,.0s'},margin:{t:10,b:80,l:70,r:20}},CFG);
+
+// Runway projection
+const runMos=['Apr-26','May-26','Jun-26','Jul-26','Aug-26','Sep-26','Oct-26','Nov-26','Dec-26'];
+const runVals=[5969616-943000,5969616-943000*2,5969616-943000*3,5969616-943000*4,5969616-943000*5,5969616-943000*6,5969616-943000*7,5969616-943000*8,5969616-943000*9];
+Plotly.newPlot('chart-runway',[{
+  x:['Mar-26',...runMos],y:[5969616,...runVals],type:'scatter',mode:'lines+markers',name:'Non-BOB Liquid',
+  line:{color:'#ef5350',width:2},marker:{size:5},fill:'tozeroy',fillcolor:'rgba(239,83,80,0.05)'
+},{
+  x:['Mar-26',...runMos],y:[14461729,...runMos.map((_,i)=>14461729-943000*(i+1))],
+  type:'scatter',mode:'lines+markers',name:'Incl. Liquid BOB',
+  line:{color:'#f7931a',width:2,dash:'dot'},marker:{size:5}
+},{
+  x:['Mar-26',...runMos],y:Array(10).fill(0),
+  type:'scatter',mode:'lines',line:{color:'#ffffff30',width:1,dash:'dot'},name:'Zero Line',showlegend:false
+}],{...DL,height:320,yaxis:{...DL.yaxis,tickformat:'$,.0s',title:{text:'Treasury Balance',font:{size:11}}}},CFG);
+
+// ══════════════════════════════════════════
+// LIVE API: CoinGecko, DefiLlama, DexScreener
+// ══════════════════════════════════════════
+const COINGECKO_IDS_TO_TRY=['bob','bob-build-on-bitcoin','gobob','build-on-bitcoin'];
+const DEFILLAMA_CHAIN='BOB';
+const REFRESH_INTERVAL=5*60*1000;
+let resolvedCGId=null;
+let apiErrors=[];
+
+function setText(id,t){const e=document.getElementById(id);if(e){e.textContent=t;e.classList.remove('loading');}}
+function setSubPct(id,v,sfx){const e=document.getElementById(id);if(e&&v!=null){e.textContent=fPct(v)+(sfx?' ('+sfx+')':'');e.className='sub '+pctClass(v);}}
+
+async function detectCGId(){
+  try{const r=await fetch('https://api.coingecko.com/api/v3/search?query=build+on+bitcoin+bob');const d=await r.json();if(d.coins?.length){const m=d.coins.find(c=>c.symbol?.toUpperCase()==='BOB')||d.coins[0];if(m)return m.id;}}catch(e){}
+  for(const id of COINGECKO_IDS_TO_TRY){try{const r=await fetch(`https://api.coingecko.com/api/v3/coins/${id}?localization=false&tickers=false&community_data=false&developer_data=false`);if(r.ok)return id;}catch(e){}}
   return null;
 }
 
-async function fetchCoinGeckoData() {
-  try {
-    if (!resolvedCoinGeckoId) {
-      resolvedCoinGeckoId = await detectCoinGeckoId();
-    }
-    if (!resolvedCoinGeckoId) {
-      throw new Error('Could not find BOB on CoinGecko. Tried: ' + COINGECKO_IDS_TO_TRY.join(', '));
-    }
-
-    const id = resolvedCoinGeckoId;
-
-    // Fetch coin data + market chart in parallel
-    const [coinRes, chartRes, btcRes] = await Promise.all([
+async function fetchCoinGecko(){
+  try{
+    if(!resolvedCGId)resolvedCGId=await detectCGId();
+    if(!resolvedCGId)throw new Error('BOB not found on CoinGecko');
+    const id=resolvedCGId;
+    const[coinRes,chartRes,btcRes]=await Promise.all([
       fetch(`https://api.coingecko.com/api/v3/coins/${id}?localization=false&tickers=false&community_data=false&developer_data=false`),
-      fetch(`https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=usd&days=90`),
-      fetch(`https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=90&interval=daily`)
+      fetch(`https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=usd&days=365`),
+      fetch(`https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=365&interval=daily`)
     ]);
-
-    const coin = await coinRes.json();
-    const chart = await chartRes.json();
-    const btcChart = await btcRes.json();
-
-    if (coin.error) throw new Error(coin.error);
-
-    const md = coin.market_data;
-
-    // Update header prices
-    document.getElementById('header-bob-price').innerHTML = `BOB ${fUSD(md.current_price?.usd)}`;
-    document.getElementById('header-btc-price').innerHTML = `BTC ${fUSD(md.current_price?.btc * (btcChart.prices?.slice(-1)[0]?.[1] || 87000))}`.replace(/.*BTC/, 'BTC ' + fUSD(btcChart.prices?.slice(-1)[0]?.[1]));
-
-    // Try to get ETH price
-    try {
-      const ethRes = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
-      const ethData = await ethRes.json();
-      document.getElementById('header-eth-price').innerHTML = `ETH ${fUSD(ethData.ethereum?.usd)}`;
-    } catch(e) {}
-
-    // KPIs
-    setText('kpi-price', fUSD(md.current_price?.usd));
-    setSubPct('kpi-price-chg', md.price_change_percentage_24h, '24h');
-
-    setText('kpi-mcap', fUSD(md.market_cap?.usd));
-    setText('kpi-mcap-rank', md.market_cap_rank ? `Rank #${md.market_cap_rank}` : '—', true);
-
-    setText('kpi-vol', fUSD(md.total_volume?.usd));
-    setSubPct('kpi-vol-chg', md.price_change_percentage_7d, '7d');
-
-    setText('kpi-fdv', fUSD(md.fully_diluted_valuation?.usd));
-    const fdvRatio = md.fully_diluted_valuation?.usd && md.market_cap?.usd ? (md.fully_diluted_valuation.usd / md.market_cap.usd).toFixed(2) + 'x' : '—';
-    setText('kpi-fdv-ratio', `FDV/MCap: ${fdvRatio}`, true);
-
-    setText('kpi-circ', fNum(md.circulating_supply));
-    const circPct = md.circulating_supply && md.total_supply ? ((md.circulating_supply / md.total_supply) * 100).toFixed(1) + '% of total' : '—';
-    setText('kpi-circ-pct', circPct, true);
-
-    setText('kpi-total', fNum(md.total_supply));
-    setText('kpi-max', md.max_supply ? `Max: ${fNum(md.max_supply)}` : 'No max supply', true);
-
-    setText('kpi-ath', fUSD(md.ath?.usd));
-    setSubPct('kpi-ath-chg', md.ath_change_percentage?.usd, 'from ATH');
-
-    setText('kpi-atl', fUSD(md.atl?.usd));
-    setSubPct('kpi-atl-chg', md.atl_change_percentage?.usd, 'from ATL');
-
-    // ── CHARTS ──
-    if (chart.prices && chart.prices.length > 0) {
-      const dates = chart.prices.map(p => new Date(p[0]));
-      const prices = chart.prices.map(p => p[1]);
-      const vols = chart.total_volumes ? chart.total_volumes.map(v => v[1]) : [];
-      const mcaps = chart.market_caps ? chart.market_caps.map(m => m[1]) : [];
-
-      // Price chart
-      Plotly.newPlot('chart-price', [{
-        x: dates, y: prices, type: 'scatter', mode: 'lines',
-        line: { color: '#f7931a', width: 2 },
-        fill: 'tozeroy', fillcolor: 'rgba(247,147,26,0.08)',
-        hovertemplate: '%{x|%b %d}<br>$%{y:.6f}<extra></extra>'
-      }], { ...darkLayout, height: 320, showlegend: false,
-        yaxis: { ...darkLayout.yaxis, tickprefix: '$' }
-      }, cfg);
-
-      // Volume chart
-      if (vols.length) {
-        Plotly.newPlot('chart-volume', [{
-          x: dates, y: vols, type: 'bar',
-          marker: { color: vols.map(v => v > (vols.reduce((a,b)=>a+b,0)/vols.length) ? '#f7931a' : '#f7931a66') },
-          hovertemplate: '%{x|%b %d}<br>$%{y:,.0f}<extra></extra>'
-        }], { ...darkLayout, height: 320, showlegend: false,
-          yaxis: { ...darkLayout.yaxis, tickprefix: '$', tickformat: ',.0s' }
-        }, cfg);
-      }
-
-      // MCap vs FDV
-      if (mcaps.length) {
-        const totalSupply = md.total_supply || 1;
-        const fdvs = prices.map(p => p * totalSupply);
-        Plotly.newPlot('chart-mcap-fdv', [{
-          x: dates, y: mcaps, type: 'scatter', mode: 'lines', name: 'Market Cap',
-          line: { color: '#3b82f6', width: 2 }
-        }, {
-          x: dates, y: fdvs, type: 'scatter', mode: 'lines', name: 'FDV',
-          line: { color: '#8b5cf6', width: 2, dash: 'dot' }
-        }], { ...darkLayout, height: 320,
-          yaxis: { ...darkLayout.yaxis, tickprefix: '$', tickformat: ',.0s' }
-        }, cfg);
-      }
-
-      // BOB vs BTC correlation
-      if (btcChart.prices && btcChart.prices.length > 0) {
-        const btcDates = btcChart.prices.map(p => new Date(p[0]));
-        const btcPrices = btcChart.prices.map(p => p[1]);
-        // Normalize both to % change from start
-        const bobStart = prices[0] || 1;
-        const btcStart = btcPrices[0] || 1;
-        const bobNorm = prices.map(p => ((p - bobStart) / bobStart) * 100);
-        // Sample BTC to match BOB dates roughly
-        const btcDaily = btcPrices;
-        const btcNorm = btcDaily.map(p => ((p - btcStart) / btcStart) * 100);
-
-        Plotly.newPlot('chart-corr', [{
-          x: dates, y: bobNorm, type: 'scatter', mode: 'lines', name: 'BOB (% chg)',
-          line: { color: '#f7931a', width: 2 }
-        }, {
-          x: btcDates, y: btcNorm, type: 'scatter', mode: 'lines', name: 'BTC (% chg)',
-          line: { color: '#f59e0b', width: 2, dash: 'dot' }
-        }], { ...darkLayout, height: 320,
-          yaxis: { ...darkLayout.yaxis, ticksuffix: '%', title: { text: '% Change', font: { size: 11 } } }
-        }, cfg);
+    const coin=await coinRes.json(),chart=await chartRes.json(),btcChart=await btcRes.json();
+    if(coin.error)throw new Error(coin.error);
+    const md=coin.market_data;
+    document.getElementById('header-bob-price').innerHTML='BOB '+fUSD(md.current_price?.usd);
+    document.getElementById('header-btc-price').innerHTML='BTC '+fUSD(btcChart.prices?.slice(-1)[0]?.[1]);
+    try{const er=await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');const ed=await er.json();document.getElementById('header-eth-price').innerHTML='ETH '+fUSD(ed.ethereum?.usd);}catch(e){}
+    setText('kpi-price',fUSD(md.current_price?.usd));setSubPct('kpi-price-chg',md.price_change_percentage_24h,'24h');
+    setText('kpi-mcap',fUSD(md.market_cap?.usd));setText('kpi-mcap-rank',md.market_cap_rank?'Rank #'+md.market_cap_rank:'—');
+    setText('kpi-vol',fUSD(md.total_volume?.usd));setSubPct('kpi-vol-chg',md.price_change_percentage_7d,'7d');
+    setText('kpi-fdv',fUSD(md.fully_diluted_valuation?.usd));
+    const fr=md.fully_diluted_valuation?.usd&&md.market_cap?.usd?(md.fully_diluted_valuation.usd/md.market_cap.usd).toFixed(2)+'x':'—';
+    setText('kpi-fdv-ratio','FDV/MCap: '+fr);
+    setText('kpi-circ',fNum(md.circulating_supply));
+    setText('kpi-circ-pct',md.circulating_supply&&md.total_supply?((md.circulating_supply/md.total_supply)*100).toFixed(1)+'% of total':'—');
+    setText('kpi-ath',fUSD(md.ath?.usd)+' / '+fUSD(md.atl?.usd));
+    setSubPct('kpi-ath-chg',md.ath_change_percentage?.usd,'from ATH');
+    if(chart.prices?.length){
+      const dates=chart.prices.map(p=>new Date(p[0])),prices=chart.prices.map(p=>p[1]);
+      const vols=chart.total_volumes?chart.total_volumes.map(v=>v[1]):[];
+      const mcaps=chart.market_caps?chart.market_caps.map(m=>m[1]):[];
+      Plotly.newPlot('chart-price',[{x:dates,y:prices,type:'scatter',mode:'lines',line:{color:'#f7931a',width:2},fill:'tozeroy',fillcolor:'rgba(247,147,26,0.08)',hovertemplate:'%{x|%b %d}<br>$%{y:.6f}<extra></extra>'}],{...DL,height:320,showlegend:false,yaxis:{...DL.yaxis,tickprefix:'$'}},CFG);
+      if(vols.length){const avg=vols.reduce((a,b)=>a+b,0)/vols.length;Plotly.newPlot('chart-volume',[{x:dates,y:vols,type:'bar',marker:{color:vols.map(v=>v>avg?'#f7931a':'#f7931a66')},hovertemplate:'%{x|%b %d}<br>$%{y:,.0f}<extra></extra>'}],{...DL,height:320,showlegend:false,yaxis:{...DL.yaxis,tickprefix:'$',tickformat:',.0s'}},CFG);}
+      if(mcaps.length){const ts=md.total_supply||1;const fdvs=prices.map(p=>p*ts);Plotly.newPlot('chart-mcap-fdv',[{x:dates,y:mcaps,type:'scatter',mode:'lines',name:'Market Cap',line:{color:'#3b82f6',width:2}},{x:dates,y:fdvs,type:'scatter',mode:'lines',name:'FDV',line:{color:'#8b5cf6',width:2,dash:'dot'}}],{...DL,height:320,yaxis:{...DL.yaxis,tickprefix:'$',tickformat:',.0s'}},CFG);}
+      if(btcChart.prices?.length){
+        const bd=btcChart.prices.map(p=>new Date(p[0])),bp=btcChart.prices.map(p=>p[1]);
+        const bs=prices[0]||1,bbs=bp[0]||1;
+        Plotly.newPlot('chart-corr',[{x:dates,y:prices.map(p=>((p-bs)/bs)*100),type:'scatter',mode:'lines',name:'BOB (% chg)',line:{color:'#f7931a',width:2}},{x:bd,y:bp.map(p=>((p-bbs)/bbs)*100),type:'scatter',mode:'lines',name:'BTC (% chg)',line:{color:'#f59e0b',width:2,dash:'dot'}}],{...DL,height:320,yaxis:{...DL.yaxis,ticksuffix:'%',title:{text:'% Change',font:{size:11}}}},CFG);
       }
     }
-
     return true;
-  } catch (e) {
-    apiErrors.push('CoinGecko: ' + e.message);
-    ['kpi-price','kpi-mcap','kpi-vol','kpi-fdv','kpi-circ','kpi-total','kpi-ath','kpi-atl'].forEach(id => {
-      setText(id, 'Error');
-    });
-    ['chart-price','chart-volume','chart-mcap-fdv','chart-corr'].forEach(id => {
-      document.getElementById(id).innerHTML = `<div class="error-msg">CoinGecko error: ${e.message}</div>`;
-    });
-    return false;
-  }
+  }catch(e){apiErrors.push('CoinGecko: '+e.message);['kpi-price','kpi-mcap','kpi-vol','kpi-fdv','kpi-circ','kpi-ath'].forEach(id=>setText(id,'Error'));return false;}
 }
 
-// ══════════════════════════════════════════
-// 2. DefiLlama — TVL & Protocols
-// ══════════════════════════════════════════
-async function fetchDefiLlamaData() {
-  try {
-    const [protocolsRes, chainTvlRes] = await Promise.all([
-      fetch('https://api.llama.fi/protocols'),
-      fetch(`https://api.llama.fi/v2/historicalChainTvl/${DEFILLAMA_CHAIN}`)
-    ]);
-
-    const allProtocols = await protocolsRes.json();
-    const chainTvlData = await chainTvlRes.json();
-
-    // Filter protocols on BOB chain
-    const bobProtocols = allProtocols
-      .filter(p => p.chains && p.chains.includes(DEFILLAMA_CHAIN) ||
-                   (p.chain && p.chain === DEFILLAMA_CHAIN))
-      .map(p => ({
-        name: p.name,
-        category: p.category || 'Other',
-        tvl: p.chainTvls?.[DEFILLAMA_CHAIN] || p.tvl || 0,
-        change_1d: p.change_1d,
-        change_7d: p.change_7d,
-        logo: p.logo
-      }))
-      .sort((a, b) => b.tvl - a.tvl);
-
-    // Chain TVL from chain-level data
-    let totalTvl = 0;
-    let tvl1d = null, tvl7d = null;
-
-    if (chainTvlData && chainTvlData.length > 0) {
-      const latest = chainTvlData[chainTvlData.length - 1];
-      totalTvl = latest.tvl;
-      if (chainTvlData.length >= 2) {
-        const prev1d = chainTvlData[chainTvlData.length - 2];
-        tvl1d = ((latest.tvl - prev1d.tvl) / prev1d.tvl) * 100;
-      }
-      if (chainTvlData.length >= 8) {
-        const prev7d = chainTvlData[chainTvlData.length - 8];
-        tvl7d = ((latest.tvl - prev7d.tvl) / prev7d.tvl) * 100;
-      }
-    }
-
-    // Fallback: sum from protocols if chain endpoint returned nothing
-    if (totalTvl === 0 && bobProtocols.length > 0) {
-      totalTvl = bobProtocols.reduce((s, p) => s + (p.tvl || 0), 0);
-    }
-
-    // KPIs
-    setText('kpi-tvl', fUSD(totalTvl));
-    if (tvl1d != null) setSubPct('kpi-tvl-chg', tvl1d, '24h');
-    setText('kpi-tvl-1d', tvl1d != null ? fPct(tvl1d) : 'N/A');
-    if (tvl1d != null) document.getElementById('kpi-tvl-1d').className = `value ${pctClass(tvl1d) === 'neg' ? '' : ''}`;
-    document.getElementById('kpi-tvl-1d').style.color = pctColor(tvl1d);
-    setText('kpi-tvl-7d', tvl7d != null ? fPct(tvl7d) : 'N/A');
-    document.getElementById('kpi-tvl-7d').style.color = pctColor(tvl7d);
-    setText('kpi-protocols', bobProtocols.length.toString());
-
-    // Protocol pie chart (top 10)
-    const top10 = bobProtocols.slice(0, 10);
-    const othersTV = bobProtocols.slice(10).reduce((s, p) => s + p.tvl, 0);
-    const pieLabels = top10.map(p => p.name);
-    const pieValues = top10.map(p => p.tvl);
-    if (othersTV > 0) { pieLabels.push('Others'); pieValues.push(othersTV); }
-    const pieColors = ['#f7931a','#3b82f6','#8b5cf6','#22c55e','#06b6d4','#ef4444','#f59e0b','#ec4899','#14b8a6','#6366f1','#6b7280'];
-
-    Plotly.newPlot('chart-tvl-protocol', [{
-      values: pieValues, labels: pieLabels, type: 'pie', hole: 0.45,
-      marker: { colors: pieColors },
-      textinfo: 'label+percent', textfont: { size: 10, color: '#fff' },
-      hovertemplate: '%{label}<br>$%{value:,.0f}<extra></extra>'
-    }], { ...darkLayout, margin: pieM, height: 380 }, cfg);
-
-    // TVL trend chart
-    if (chainTvlData && chainTvlData.length > 0) {
-      const tDates = chainTvlData.map(d => new Date(d.date * 1000));
-      const tVals = chainTvlData.map(d => d.tvl);
-      Plotly.newPlot('chart-tvl-trend', [{
-        x: tDates, y: tVals, type: 'scatter', mode: 'lines',
-        line: { color: '#22c55e', width: 2 },
-        fill: 'tozeroy', fillcolor: 'rgba(34,197,94,0.08)',
-        hovertemplate: '%{x|%b %d, %Y}<br>$%{y:,.0f}<extra></extra>'
-      }], { ...darkLayout, height: 380, showlegend: false,
-        yaxis: { ...darkLayout.yaxis, tickprefix: '$', tickformat: ',.0s' }
-      }, cfg);
-    }
-
-    // Protocols table
-    const tbody = document.getElementById('protocols-table-body');
-    if (bobProtocols.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#8899aa;">No protocols found on BOB chain via DefiLlama</td></tr>';
-    } else {
-      tbody.innerHTML = bobProtocols.slice(0, 25).map(p => `
-        <tr>
-          <td><strong>${p.name}</strong></td>
-          <td>${p.category}</td>
-          <td>${fUSD(p.tvl)}</td>
-          <td style="color:${pctColor(p.change_1d)}">${p.change_1d != null ? fPct(p.change_1d) : '—'}</td>
-          <td style="color:${pctColor(p.change_7d)}">${p.change_7d != null ? fPct(p.change_7d) : '—'}</td>
-        </tr>
-      `).join('');
-    }
-
+async function fetchDefiLlama(){
+  try{
+    const[pr,cr]=await Promise.all([fetch('https://api.llama.fi/protocols'),fetch(`https://api.llama.fi/v2/historicalChainTvl/${DEFILLAMA_CHAIN}`)]);
+    const allP=await pr.json(),ctvl=await cr.json();
+    const bobP=allP.filter(p=>p.chains?.includes(DEFILLAMA_CHAIN)).map(p=>({name:p.name,category:p.category||'Other',tvl:p.chainTvls?.[DEFILLAMA_CHAIN]||p.tvl||0,change_1d:p.change_1d,change_7d:p.change_7d})).sort((a,b)=>b.tvl-a.tvl);
+    let ttv=0,t1d=null,t7d=null;
+    if(ctvl?.length){const l=ctvl[ctvl.length-1];ttv=l.tvl;if(ctvl.length>=2){const p=ctvl[ctvl.length-2];t1d=((l.tvl-p.tvl)/p.tvl)*100;}if(ctvl.length>=8){const p=ctvl[ctvl.length-8];t7d=((l.tvl-p.tvl)/p.tvl)*100;}}
+    if(ttv===0&&bobP.length)ttv=bobP.reduce((s,p)=>s+p.tvl,0);
+    setText('kpi-tvl',fUSD(ttv));if(t1d!=null)setSubPct('kpi-tvl-chg',t1d,'24h');
+    setText('kpi-tvl-1d',t1d!=null?fPct(t1d):'N/A');document.getElementById('kpi-tvl-1d').style.color=pctColor(t1d);
+    setText('kpi-tvl-7d',t7d!=null?fPct(t7d):'N/A');document.getElementById('kpi-tvl-7d').style.color=pctColor(t7d);
+    setText('kpi-protocols',bobP.length.toString());
+    const t10=bobP.slice(0,10),oth=bobP.slice(10).reduce((s,p)=>s+p.tvl,0);
+    const pl=[...t10.map(p=>p.name),...(oth>0?['Others']:[])],pv=[...t10.map(p=>p.tvl),...(oth>0?[oth]:[])];
+    const pc=['#f7931a','#3b82f6','#8b5cf6','#22c55e','#06b6d4','#ef4444','#f59e0b','#ec4899','#14b8a6','#6366f1','#6b7280'];
+    Plotly.newPlot('chart-tvl-protocol',[{values:pv,labels:pl,type:'pie',hole:0.45,marker:{colors:pc},textinfo:'label+percent',textfont:{size:10,color:'#fff'}}],{...DL,margin:PM,height:380},CFG);
+    if(ctvl?.length){Plotly.newPlot('chart-tvl-trend',[{x:ctvl.map(d=>new Date(d.date*1000)),y:ctvl.map(d=>d.tvl),type:'scatter',mode:'lines',line:{color:'#22c55e',width:2},fill:'tozeroy',fillcolor:'rgba(34,197,94,0.08)'}],{...DL,height:380,showlegend:false,yaxis:{...DL.yaxis,tickprefix:'$',tickformat:',.0s'}},CFG);}
+    const tb=document.getElementById('protocols-table-body');
+    tb.innerHTML=bobP.length?bobP.slice(0,25).map(p=>`<tr><td><strong>${p.name}</strong></td><td>${p.category}</td><td>${fUSD(p.tvl)}</td><td style="color:${pctColor(p.change_1d)}">${p.change_1d!=null?fPct(p.change_1d):'—'}</td><td style="color:${pctColor(p.change_7d)}">${p.change_7d!=null?fPct(p.change_7d):'—'}</td></tr>`).join(''):'<tr><td colspan="5" style="text-align:center;color:#8899aa;">No protocols found</td></tr>';
     return true;
-  } catch (e) {
-    apiErrors.push('DefiLlama: ' + e.message);
-    ['kpi-tvl','kpi-tvl-1d','kpi-tvl-7d','kpi-protocols'].forEach(id => setText(id, 'Error'));
-    document.getElementById('protocols-table-body').innerHTML = `<tr><td colspan="5" class="error-msg">DefiLlama error: ${e.message}</td></tr>`;
-    return false;
-  }
+  }catch(e){apiErrors.push('DefiLlama: '+e.message);return false;}
 }
 
-// ══════════════════════════════════════════
-// 3. DefiLlama — Stablecoins on BOB
-// ══════════════════════════════════════════
-async function fetchStablecoinsData() {
-  try {
-    const res = await fetch('https://stablecoins.llama.fi/stablecoins?includePrices=true');
-    const data = await res.json();
-
-    // Also get chain-specific stablecoin data
-    let chainStables = [];
-    try {
-      const chainRes = await fetch(`https://stablecoins.llama.fi/stablecoins?includePrices=true`);
-      const chainData = await chainRes.json();
-
-      if (chainData.peggedAssets) {
-        chainStables = chainData.peggedAssets
-          .filter(s => s.chainCirculating && s.chainCirculating[DEFILLAMA_CHAIN])
-          .map(s => ({
-            name: s.name,
-            symbol: s.symbol,
-            circulating: s.chainCirculating[DEFILLAMA_CHAIN]?.current?.peggedUSD || 0
-          }))
-          .filter(s => s.circulating > 0)
-          .sort((a, b) => b.circulating - a.circulating);
-      }
-    } catch(e) {}
-
-    const totalStables = chainStables.reduce((s, c) => s + c.circulating, 0);
-    setText('kpi-stables', fUSD(totalStables));
-
-    if (chainStables.length > 0) {
-      setText('kpi-dom-stable', chainStables[0].symbol);
-      const domPct = totalStables > 0 ? ((chainStables[0].circulating / totalStables) * 100).toFixed(1) + '%' : '—';
-      setText('kpi-dom-stable-pct', `${domPct} dominance`, true);
-    } else {
-      setText('kpi-dom-stable', 'N/A');
-    }
-
-    // Stablecoin pie
-    if (chainStables.length > 0) {
-      const stableColors = ['#2775ca', '#26a17b', '#f7931a', '#3b82f6', '#8b5cf6', '#6b7280'];
-      Plotly.newPlot('chart-stables', [{
-        values: chainStables.map(s => s.circulating),
-        labels: chainStables.map(s => `${s.symbol} — ${fUSD(s.circulating)}`),
-        type: 'pie', hole: 0.45,
-        marker: { colors: stableColors },
-        textinfo: 'label+percent', textfont: { size: 11, color: '#fff' }
-      }], { ...darkLayout, margin: pieM, height: 320 }, cfg);
-    } else {
-      document.getElementById('chart-stables').innerHTML = '<div class="error-msg">No stablecoin data found for BOB chain</div>';
-    }
-
-    // Stablecoin trend — use chain historical
-    try {
-      const trendRes = await fetch(`https://stablecoins.llama.fi/stablecoincharts/${DEFILLAMA_CHAIN}?stablecoin=`);
-      const trendData = await trendRes.json();
-      if (trendData && trendData.length > 0) {
-        const dates = trendData.map(d => new Date(d.date * 1000));
-        const vals = trendData.map(d => {
-          const total = Object.values(d.totalCirculating || {}).reduce((s, v) => s + (v?.peggedUSD || 0), 0);
-          return total;
-        });
-        Plotly.newPlot('chart-stables-trend', [{
-          x: dates, y: vals, type: 'scatter', mode: 'lines',
-          line: { color: '#2775ca', width: 2 },
-          fill: 'tozeroy', fillcolor: 'rgba(39,117,202,0.08)',
-          hovertemplate: '%{x|%b %d}<br>$%{y:,.0f}<extra></extra>'
-        }], { ...darkLayout, height: 320, showlegend: false,
-          yaxis: { ...darkLayout.yaxis, tickprefix: '$', tickformat: ',.0s' }
-        }, cfg);
-      }
-    } catch(e) {
-      document.getElementById('chart-stables-trend').innerHTML = '<div class="error-msg">Could not load stablecoin trend</div>';
-    }
-
+async function fetchStablecoins(){
+  try{
+    const r=await fetch('https://stablecoins.llama.fi/stablecoins?includePrices=true');const d=await r.json();
+    let cs=[];
+    if(d.peggedAssets)cs=d.peggedAssets.filter(s=>s.chainCirculating?.[DEFILLAMA_CHAIN]).map(s=>({name:s.name,symbol:s.symbol,circ:s.chainCirculating[DEFILLAMA_CHAIN]?.current?.peggedUSD||0})).filter(s=>s.circ>0).sort((a,b)=>b.circ-a.circ);
+    const tot=cs.reduce((s,c)=>s+c.circ,0);
+    setText('kpi-stables',fUSD(tot));
+    if(cs.length){setText('kpi-dom-stable',cs[0].symbol);setText('kpi-dom-stable-pct',tot>0?((cs[0].circ/tot)*100).toFixed(1)+'% dominance':'—');}
+    if(cs.length){Plotly.newPlot('chart-stables',[{values:cs.map(s=>s.circ),labels:cs.map(s=>s.symbol+' — '+fUSD(s.circ)),type:'pie',hole:0.45,marker:{colors:['#2775ca','#26a17b','#f7931a','#3b82f6','#8b5cf6']},textinfo:'label+percent',textfont:{size:11,color:'#fff'}}],{...DL,margin:PM,height:320},CFG);}
+    try{const tr=await fetch(`https://stablecoins.llama.fi/stablecoincharts/${DEFILLAMA_CHAIN}?stablecoin=`);const td=await tr.json();
+      if(td?.length){Plotly.newPlot('chart-stables-trend',[{x:td.map(d=>new Date(d.date*1000)),y:td.map(d=>Object.values(d.totalCirculating||{}).reduce((s,v)=>s+(v?.peggedUSD||0),0)),type:'scatter',mode:'lines',line:{color:'#2775ca',width:2},fill:'tozeroy',fillcolor:'rgba(39,117,202,0.08)'}],{...DL,height:320,showlegend:false,yaxis:{...DL.yaxis,tickprefix:'$',tickformat:',.0s'}},CFG);}}catch(e){}
     return true;
-  } catch (e) {
-    apiErrors.push('Stablecoins: ' + e.message);
-    return false;
-  }
+  }catch(e){apiErrors.push('Stablecoins: '+e.message);return false;}
 }
 
-// ══════════════════════════════════════════
-// 4. DexScreener — DEX Pairs
-// ══════════════════════════════════════════
-async function fetchDexScreenerData() {
-  try {
-    const res = await fetch(`https://api.dexscreener.com/latest/dex/search?q=${DEXSCREENER_QUERY}`);
-    const data = await res.json();
-
-    // Filter to BOB-relevant pairs
-    let pairs = (data.pairs || []).filter(p => {
-      const base = (p.baseToken?.symbol || '').toUpperCase();
-      const quote = (p.quoteToken?.symbol || '').toUpperCase();
-      return base === 'BOB' || quote === 'BOB';
-    });
-
-    // Sort by volume
-    pairs.sort((a, b) => (b.volume?.h24 || 0) - (a.volume?.h24 || 0));
-
-    // KPIs
-    const totalLiq = pairs.reduce((s, p) => s + (p.liquidity?.usd || 0), 0);
-    const totalVol = pairs.reduce((s, p) => s + (p.volume?.h24 || 0), 0);
-    const totalTxns = pairs.reduce((s, p) => s + (p.txns?.h24?.buys || 0) + (p.txns?.h24?.sells || 0), 0);
-
-    setText('kpi-dex-liq', fUSD(totalLiq));
-    setText('kpi-dex-vol', fUSD(totalVol));
-    setText('kpi-dex-pairs', pairs.length.toString());
-    setText('kpi-dex-txns', fNum(totalTxns));
-
-    // Liquidity pie
-    const topPairs = pairs.slice(0, 8);
-    if (topPairs.length > 0) {
-      const dexColors = ['#f7931a','#3b82f6','#22c55e','#8b5cf6','#06b6d4','#ef4444','#f59e0b','#6b7280'];
-      Plotly.newPlot('chart-dex-liq', [{
-        values: topPairs.map(p => p.liquidity?.usd || 0),
-        labels: topPairs.map(p => `${p.baseToken?.symbol}/${p.quoteToken?.symbol} (${p.dexId})`),
-        type: 'pie', hole: 0.45,
-        marker: { colors: dexColors },
-        textinfo: 'label+percent', textfont: { size: 10, color: '#fff' }
-      }], { ...darkLayout, margin: pieM, height: 340 }, cfg);
-
-      // Volume bar
-      Plotly.newPlot('chart-dex-vol', [{
-        x: topPairs.map(p => `${p.baseToken?.symbol}/${p.quoteToken?.symbol}<br>${p.dexId}`),
-        y: topPairs.map(p => p.volume?.h24 || 0),
-        type: 'bar',
-        marker: { color: dexColors },
-        hovertemplate: '%{x}<br>$%{y:,.0f}<extra></extra>'
-      }], { ...darkLayout, height: 340, showlegend: false,
-        yaxis: { ...darkLayout.yaxis, tickprefix: '$', tickformat: ',.0s' },
-        margin: { t: 10, b: 80, l: 70, r: 20 }
-      }, cfg);
-    } else {
-      document.getElementById('chart-dex-liq').innerHTML = '<div class="error-msg">No DEX pairs found for BOB</div>';
-      document.getElementById('chart-dex-vol').innerHTML = '<div class="error-msg">No DEX pairs found for BOB</div>';
+async function fetchDexScreener(){
+  try{
+    const r=await fetch('https://api.dexscreener.com/latest/dex/search?q=BOB');const d=await r.json();
+    let pairs=(d.pairs||[]).filter(p=>{const b=(p.baseToken?.symbol||'').toUpperCase(),q=(p.quoteToken?.symbol||'').toUpperCase();return b==='BOB'||q==='BOB';}).sort((a,b)=>(b.volume?.h24||0)-(a.volume?.h24||0));
+    const tl=pairs.reduce((s,p)=>s+(p.liquidity?.usd||0),0),tv=pairs.reduce((s,p)=>s+(p.volume?.h24||0),0),tt=pairs.reduce((s,p)=>s+(p.txns?.h24?.buys||0)+(p.txns?.h24?.sells||0),0);
+    setText('kpi-dex-liq',fUSD(tl));setText('kpi-dex-vol',fUSD(tv));setText('kpi-dex-pairs',pairs.length.toString());setText('kpi-dex-txns',fNum(tt));
+    const tp=pairs.slice(0,8),dc=['#f7931a','#3b82f6','#22c55e','#8b5cf6','#06b6d4','#ef4444','#f59e0b','#6b7280'];
+    if(tp.length){
+      Plotly.newPlot('chart-dex-liq',[{values:tp.map(p=>p.liquidity?.usd||0),labels:tp.map(p=>`${p.baseToken?.symbol}/${p.quoteToken?.symbol} (${p.dexId})`),type:'pie',hole:0.45,marker:{colors:dc},textinfo:'label+percent',textfont:{size:10,color:'#fff'}}],{...DL,margin:PM,height:340},CFG);
+      Plotly.newPlot('chart-dex-vol',[{x:tp.map(p=>`${p.baseToken?.symbol}/${p.quoteToken?.symbol}<br>${p.dexId}`),y:tp.map(p=>p.volume?.h24||0),type:'bar',marker:{color:dc}}],{...DL,height:340,showlegend:false,yaxis:{...DL.yaxis,tickprefix:'$',tickformat:',.0s'},margin:{t:10,b:80,l:70,r:20}},CFG);
     }
-
-    // Table
-    const tbody = document.getElementById('dex-table-body');
-    if (pairs.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; color:#8899aa;">No BOB pairs found on DexScreener</td></tr>';
-    } else {
-      tbody.innerHTML = pairs.slice(0, 20).map(p => {
-        const chg5m = p.priceChange?.m5;
-        const chg1h = p.priceChange?.h1;
-        const chg24h = p.priceChange?.h24;
-        const buys = p.txns?.h24?.buys || 0;
-        const sells = p.txns?.h24?.sells || 0;
-        return `<tr>
-          <td><strong>${p.baseToken?.symbol}/${p.quoteToken?.symbol}</strong></td>
-          <td>${p.dexId || '—'}</td>
-          <td>${p.chainId || '—'}</td>
-          <td>${fUSD(p.priceUsd ? parseFloat(p.priceUsd) : null)}</td>
-          <td>${fUSD(p.volume?.h24)}</td>
-          <td>${fUSD(p.liquidity?.usd)}</td>
-          <td style="color:${pctColor(chg5m)}">${chg5m != null ? fPct(chg5m) : '—'}</td>
-          <td style="color:${pctColor(chg1h)}">${chg1h != null ? fPct(chg1h) : '—'}</td>
-          <td style="color:${pctColor(chg24h)}">${chg24h != null ? fPct(chg24h) : '—'}</td>
-          <td>${buys} / ${sells}</td>
-        </tr>`;
-      }).join('');
-    }
-
+    const tb=document.getElementById('dex-table-body');
+    tb.innerHTML=pairs.length?pairs.slice(0,20).map(p=>{const c5=p.priceChange?.m5,c1=p.priceChange?.h1,c24=p.priceChange?.h24;return`<tr><td><strong>${p.baseToken?.symbol}/${p.quoteToken?.symbol}</strong></td><td>${p.dexId||'—'}</td><td>${p.chainId||'—'}</td><td>${fUSD(p.priceUsd?parseFloat(p.priceUsd):null)}</td><td>${fUSD(p.volume?.h24)}</td><td>${fUSD(p.liquidity?.usd)}</td><td style="color:${pctColor(c5)}">${c5!=null?fPct(c5):'—'}</td><td style="color:${pctColor(c1)}">${c1!=null?fPct(c1):'—'}</td><td style="color:${pctColor(c24)}">${c24!=null?fPct(c24):'—'}</td><td>${(p.txns?.h24?.buys||0)} / ${(p.txns?.h24?.sells||0)}</td></tr>`;}).join(''):'<tr><td colspan="10" style="text-align:center;color:#8899aa;">No BOB pairs found</td></tr>';
     return true;
-  } catch (e) {
-    apiErrors.push('DexScreener: ' + e.message);
-    document.getElementById('dex-table-body').innerHTML = `<tr><td colspan="10" class="error-msg">DexScreener error: ${e.message}</td></tr>`;
-    return false;
-  }
+  }catch(e){apiErrors.push('DexScreener: '+e.message);return false;}
 }
 
-// ══════════════════════════════════════════
-// HELPERS
-// ══════════════════════════════════════════
-function setText(id, text) {
-  const el = document.getElementById(id);
-  if (el) { el.textContent = text; el.classList.remove('loading'); }
+async function refreshAll(){
+  apiErrors=[];
+  document.getElementById('last-refresh').textContent='Refreshing... '+new Date().toLocaleTimeString();
+  const results=await Promise.allSettled([fetchCoinGecko(),fetchDefiLlama(),fetchStablecoins(),fetchDexScreener()]);
+  const ok=results.filter(r=>r.status==='fulfilled'&&r.value).length;
+  const ts=new Date().toLocaleTimeString();
+  document.getElementById('last-refresh').textContent=`Last refresh: ${ts} — ${ok}/4 APIs OK`;
+  document.getElementById('last-refresh').style.color=ok===4?'#66bb6a':ok>=2?'#ffa726':'#ef5350';
+  document.getElementById('footer-status').textContent=`${ok}/4 APIs loaded at ${ts}`+(apiErrors.length?' | '+apiErrors.join('; '):'');
 }
 
-function setSubPct(id, value, suffix) {
-  const el = document.getElementById(id);
-  if (el) {
-    if (value != null) {
-      el.textContent = fPct(value) + (suffix ? ` (${suffix})` : '');
-      el.className = 'sub ' + pctClass(value);
-    }
-  }
-}
-
-// ══════════════════════════════════════════
-// MAIN REFRESH
-// ══════════════════════════════════════════
-async function refreshAll() {
-  apiErrors = [];
-  const now = new Date();
-  document.getElementById('last-refresh').textContent = `Refreshing... ${now.toLocaleTimeString()}`;
-  document.getElementById('footer-status').textContent = 'Fetching data...';
-
-  const results = await Promise.allSettled([
-    fetchCoinGeckoData(),
-    fetchDefiLlamaData(),
-    fetchStablecoinsData(),
-    fetchDexScreenerData()
-  ]);
-
-  const successCount = results.filter(r => r.status === 'fulfilled' && r.value === true).length;
-  const timestamp = new Date().toLocaleTimeString();
-
-  document.getElementById('last-refresh').textContent = `Last refresh: ${timestamp} — ${successCount}/4 APIs OK`;
-  document.getElementById('last-refresh').style.color = successCount === 4 ? '#66bb6a' : (successCount >= 2 ? '#ffa726' : '#ef5350');
-
-  let statusMsg = `${successCount}/4 APIs loaded at ${timestamp}`;
-  if (apiErrors.length > 0) statusMsg += ' | Errors: ' + apiErrors.join('; ');
-  document.getElementById('footer-status').textContent = statusMsg;
-}
-
-// ── INIT ──
 refreshAll();
-setInterval(refreshAll, REFRESH_INTERVAL);
+setInterval(refreshAll,REFRESH_INTERVAL);
 </script>
 </body>
 </html>
